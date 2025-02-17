@@ -8,6 +8,7 @@ HELMET <img src="assets/logo.jpeg" alt="HELMET" width="30"> (How to Evaluate Lon
 The datasets are application-centric and are designed to evaluate models at different lengths and levels of complexity.
 Please check out the paper for more details, and this repo will detail how to run the evaluation.
 
+
 ## Quick Links
 
 - [Setup](#setup)
@@ -34,17 +35,19 @@ See `CHANGELOG.md` for updates and more details.
 
 ## Setup
 
-Please install the necessary packages with
+Please install the necessary packages with (using a virtual environment is recommended, tested with python 3.11):
 ```bash
+python -m venv env
+source env/bin/activate
 pip install -r requirements.txt
 ```
 
 Additionally, if you wish to use the API models, you will need to install the package corresponding to the API you wish to use
 ```bash
-pip install openai # OpenAI API
-pip install anthropic # Anthropic API
-pip install google-generativeai # Google GenerativeAI API
-pip install vertexai==1.64.0 # Google VertexAI 
+pip install openai # OpenAI API (GPT)
+pip install anthropic==0.42.0 # Anthropic API (Claude)
+pip install google-generativeai # Google API (Gemini)
+pip install vertexai==1.71.0 # Google API (Gemini)
 pip install together # Together API
 ```
 You should also set the environmental variables accordingly so the API calls can be made correctly. To see the variable that you should set up, check out `model_utils.py` and the corresponding class (e.g., `GeminiModel`).
@@ -73,12 +76,19 @@ To run the evaluation, simply use one of the config files in the `configs` direc
 python eval.py --config configs/cite.yaml --model_name_or_path {local model path or huggingface model name} --output_dir {output directory, defaults to output/{model_name}}
 ```
 This will output the results file under the output directory in two files: `.json` contains all the data point details while `.json.score` only contain the aggregated metrics.
-
+Note: for non-instruction-tuned models (e.g., `Llama-3-8B`), you should ALWAYS set `--use_chat_template False`, the defaults are set for instruction-tuned models.
 
 You may also run the whole suite with a simple bash statement:
 ```bash
 bash scripts/run_eval.sh
-bash scripts/run_api.sh # for the API models, note that API models results may vary due to the randomness in the API calls
+
+# I recommend using these slurm scripts as they contain more details (including all the model names) and can be easily modified to fit your setup
+# you can also run them interactive by replacing sbatch with bash, check out the file for more details
+sbatch scripts/run_eval_slurm.sh
+sbatch scripts/run_short_slurm.sh
+
+# for the API models, note that API models results may vary due to the randomness in the API calls
+bash scripts/run_api.sh 
 ```
 Check out the script file for more details!
 See [Others](#others) for the slurm scripts, easily collecting all the results, and using VLLM.
@@ -143,7 +153,7 @@ To quickly collect all the results, you can use the script:
 python scripts/collect_results.py
 ```
 
-Please check out the script and modify the specific fields to fit your needs.
+You should check the script for more details and modify the specific fields to fit your needs.
 For example, you can change the models, task configs, output directories, tags, and more.
 
 </details>
@@ -185,6 +195,19 @@ The speedup is much more noticable for tasks that generates more tokens (e.g., s
 
 </details>
 
+<details>
+
+<summary>Error loading InfiniteBench</summary>
+
+If you encounter errors loading the InfiniteBench dataset in different modes (online vs. offline inference), it appears to stem from a bug in the hashing function.
+To fix this, you can do the following:
+```bash
+cd {cache_dir}/huggingface/datasets/xinrongzhang2022___infinitebench
+ln -s default-819c8cda45921923 default-7662505cb3478cd4
+```
+
+</details>
+
 
 <details>
 
@@ -209,7 +232,7 @@ If you encounter any problems, you can also open an issue here. Please try to sp
 
 If you find our work useful, please cite us:
 ```
-@misc{yen2024helmetevaluatelongcontextlanguage,
+@misc{yen2024helmet,
       title={HELMET: How to Evaluate Long-Context Language Models Effectively and Thoroughly}, 
       author={Howard Yen and Tianyu Gao and Minmin Hou and Ke Ding and Daniel Fleischer and Peter Izsak and Moshe Wasserblat and Danqi Chen},
       year={2024},
