@@ -24,7 +24,7 @@
 # For more values, check "man sbatch"
 #SBATCH --mail-type=ALL
 # Remember to set your email address here instead of nobody
-#SBATCH --mail-user=nobody
+#SBATCH --mail-user=joie@princeton.edu
 
 echo "Date              = $(date)"
 echo "Hostname          = $(hostname -s)"
