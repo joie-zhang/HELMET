@@ -167,6 +167,7 @@ cython_debug/
 #.idea/
 
 data
+data.tar.gz
 output
 configs/_*
 slurm
