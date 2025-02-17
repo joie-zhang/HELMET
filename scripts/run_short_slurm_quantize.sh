@@ -3,7 +3,7 @@
 #       Job blueprint        #
 ##############################
 # Give your job a name, so you can recognize it in the queue overview
-#SBATCH --job-name=16bit_2llm_8k_4hr_150G_helmet_quantize ## CHANGE JOBNAME HERE
+#SBATCH --job-name=4bit_2llm_16k_4hr_150G_helmet_quantize ## CHANGE JOBNAME HERE
 #SBATCH --array=0-1
 # Remove one # to uncommment
 #SBATCH --output=./joblog/%x-%A_%a.out                          ## Stdout
@@ -43,11 +43,13 @@ PORT=$(shuf -i 30000-65000 -n 1)
 echo "Port                          = $PORT"
 export OMP_NUM_THREADS=8
 TAG=v1
-CONFIGS=(recall_short.yaml rag_short.yaml)
+CONFIGS=(recall_short_16k.yaml rag_short_16k.yaml)
+# CONFIGS=(recall_short.yaml rag_short.yaml)
 # CONFIGS=(recall_short.yaml rag_short.yaml longqa_short.yaml summ_short.yaml icl_short.yaml rerank_short.yaml cite_short.yaml)
 # CONFIGS=(${CONFIGS[8]})
 SEED=42
-QUANTIZE=16
+QUANTIZE=4
+CONTEXT_LEN="16k"
 M_IDX=$IDX
 # Array for models 13B and smaller (2 models)
 S_MODELS=(
@@ -55,7 +57,7 @@ S_MODELS=(
   "Qwen2.5-7B-Instruct" # 1
 )
 MNAME="${S_MODELS[$M_IDX]}"
-OUTPUT_DIR="output/bit$QUANTIZE/$MNAME/$SLURM_ARRAY_JOB_ID"
+OUTPUT_DIR="output/$CONTEXT_LEN/bit$QUANTIZE/$MNAME/$SLURM_ARRAY_JOB_ID"
 MODEL_NAME="/scratch/gpfs/DANQIC/models/$MNAME" # CHANGE PATH HERE or you can change the array to load from HF
 shopt -s nocasematch
 chat_models=".*(chat|instruct|it$|nous|command|Jamba-1.5|MegaBeam).*"
