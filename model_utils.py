@@ -76,6 +76,7 @@ class LLM:
         do_sample: bool=True,
         stop_newline: bool=False,
         use_chat_template: bool=False,
+        quantize: int=16,
     ):
         self.model_name = model_name
         self.temperature = temperature
@@ -86,6 +87,7 @@ class LLM:
         self.do_sample = do_sample
         self.use_chat_template = use_chat_template
         self.stops = None
+        self.quantize = quantize
         if stop_newline:
             self.stops = ["\n", "\n\n"]
 
@@ -786,6 +788,7 @@ class HFModel(LLM):
         stop_newline=False,
         use_chat_template=False,
         seed=42,
+        quantize=16,
         **kwargs,
     ):
         super().__init__(
@@ -798,11 +801,12 @@ class HFModel(LLM):
             do_sample=do_sample,
             stop_newline=stop_newline,
             use_chat_template=use_chat_template,
+            quantize=quantize,
         )
         set_seed(seed)
 
         import transformers
-        from transformers import AutoModelForCausalLM, AutoTokenizer, AutoConfig
+        from transformers import AutoModelForCausalLM, AutoTokenizer, AutoConfig, BitsAndBytesConfig
         model_kwargs = {}
         from pkg_resources import parse_version
         if parse_version(transformers.__version__) <= parse_version("4.34.1"):
@@ -828,14 +832,45 @@ class HFModel(LLM):
             logger.info(f"Override rope theta to {kwargs['rope_theta']}")
             config.rope_theta = kwargs["rope_theta"]
 
-        self.model = AutoModelForCausalLM.from_pretrained(
-            model_name,
-            config=config,
-            torch_dtype=kwargs.get("torch_dtype", torch.bfloat16),
-            device_map="auto",
-            trust_remote_code=True,
-            **model_kwargs
-        )
+        # quantization
+        if quantize == 8:       # 8 bit quantization
+            quantization_config = BitsAndBytesConfig(load_in_8bit=True)
+            
+            self.model = AutoModelForCausalLM.from_pretrained(
+                model_name, 
+                torch_dtype=kwargs.get("torch_dtype", torch.bfloat16),
+                device_map="auto",
+                trust_remote_code=True,
+                quantization_config=quantization_config,
+                **model_kwargs
+            )
+            
+        elif quantize == 4:     # 4 bit quantization
+            quantization_config = BitsAndBytesConfig(load_in_4bit=True,
+                                    bnb_4bit_compute_dtype=torch.bfloat16,
+                                    bnb_4bit_use_double_quant=True,
+                                    bnb_4bit_quant_type= "nf4"
+                                )
+                        
+            self.model = AutoModelForCausalLM.from_pretrained(
+                model_name, 
+                torch_dtype=kwargs.get("torch_dtype", torch.bfloat16),
+                device_map="auto",
+                trust_remote_code=True,
+                quantization_config=quantization_config,
+                **model_kwargs
+            )
+            
+        else:   # no quantization
+            self.model = AutoModelForCausalLM.from_pretrained(
+                model_name, 
+                config=config,
+                torch_dtype=kwargs.get("torch_dtype", torch.bfloat16),
+                device_map="auto",
+                trust_remote_code=True,
+                **model_kwargs
+            )
+        
         if kwargs.get("torch_compile", True):
             self.model = torch.compile(self.model)
             # self.model.forward = torch.compile(self.model.forward, mode="reduce-overhead", fullgraph=True)
