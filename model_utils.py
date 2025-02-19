@@ -834,6 +834,7 @@ class HFModel(LLM):
 
         # quantization
         if quantize == 8:       # 8 bit quantization
+            print("******************* 8 BIT Quantization happening *******************")
             quantization_config = BitsAndBytesConfig(load_in_8bit=True)
             
             self.model = AutoModelForCausalLM.from_pretrained(
@@ -846,6 +847,7 @@ class HFModel(LLM):
             )
             
         elif quantize == 4:     # 4 bit quantization
+            print("******************* 4 BIT Quantization happening *******************")
             quantization_config = BitsAndBytesConfig(load_in_4bit=True,
                                     bnb_4bit_compute_dtype=torch.bfloat16,
                                     bnb_4bit_use_double_quant=True,
@@ -862,6 +864,8 @@ class HFModel(LLM):
             )
             
         else:   # no quantization
+            print("******************* NO Quantization happening *******************")
+            print(f"quantize: {quantize}")
             self.model = AutoModelForCausalLM.from_pretrained(
                 model_name, 
                 config=config,
@@ -1103,6 +1107,8 @@ def load_LLM(args):
             kwargs["torch_dtype"] = torch.float32
         if args.rope_theta is not None:
             kwargs["rope_theta"] = args.rope_theta
+        if args.quantize is not None:
+            kwargs["quantize"] = args.quantize
 
     logger.info(f"Loading model {args.model_name_or_path} with {model_cls.__name__}")
     model = model_cls(
