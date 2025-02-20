@@ -3,7 +3,7 @@
 #       Job blueprint        #
 ##############################
 # Give your job a name, so you can recognize it in the queue overview
-#SBATCH --job-name=16bit_2llm_32k_4hr_150G_helmet_quantize ## CHANGE JOBNAME HERE
+#SBATCH --job-name=4bit_2llm_32k_1hr_50G_helmet_quantize ## CHANGE JOBNAME HERE
 #SBATCH --array=0-1
 # Remove one # to uncommment
 #SBATCH --output=./joblog/%x-%A_%a.out                          ## Stdout
@@ -12,8 +12,8 @@
 #SBATCH -N 1                                        ##nodes
 #SBATCH -n 1                                        ##tasks
 #SBATCH --cpus-per-task=8
-#SBATCH --mem=150G
-#SBATCH --time=4:00:00
+#SBATCH --mem=50G
+#SBATCH --time=1:00:00
 #SBATCH --gres=gpu:1 --ntasks-per-node=1 -N 1
 #SBATCH --constraint=gpu80
 # Turn on mail notification. There are many possible self-explaining values:
@@ -43,13 +43,13 @@ PORT=$(shuf -i 30000-65000 -n 1)
 echo "Port                          = $PORT"
 export OMP_NUM_THREADS=8
 TAG=v1
-CONFIGS=(recall_short_32k.yaml rag_short_32k.yaml rerank_short_32k.yaml)
-# CONFIGS=(recall_short_16k.yaml rag_short_16k.yaml)
-# CONFIGS=(recall_short.yaml rag_short.yaml)
+# CONFIGS=(rag_short_32k_nq_trivia.yaml)
+# CONFIGS=(rag_short_32k_hotpotqa.yaml)
+CONFIGS=(rag_short_32k_popqa.yaml)
 # CONFIGS=(recall_short.yaml rag_short.yaml longqa_short.yaml summ_short.yaml icl_short.yaml rerank_short.yaml cite_short.yaml)
 # CONFIGS=(${CONFIGS[8]})
 SEED=42
-QUANTIZE=16
+QUANTIZE=4
 CONTEXT_LEN="32k"
 M_IDX=$IDX
 # Array for models 13B and smaller (2 models)
