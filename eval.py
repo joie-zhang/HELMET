@@ -33,7 +33,7 @@ def run_test(args, model, dataset, test_file, demo_file):
         tag += f"_pop{args.popularity_threshold}"
 
     test_name = os.path.splitext(os.path.basename(test_file))[0]
-    output_path = os.path.join(args.output_dir, f"{dataset}_{tag}_{test_name}_in{args.input_max_length}_size{args.max_test_samples}_shots{args.shots}_samp{args.do_sample}max{args.generation_max_length}min{args.generation_min_length}t{args.temperature}p{args.top_p}_chat{args.use_chat_template}_{args.seed}.json")
+    output_path = os.path.join(args.output_dir, f"{dataset}_{args.quantize}bit_{tag}_{test_name}_in{args.input_max_length}_size{args.max_test_samples}_shots{args.shots}_samp{args.do_sample}max{args.generation_max_length}min{args.generation_min_length}t{args.temperature}p{args.top_p}_chat{args.use_chat_template}_{args.seed}.json")
     if os.path.exists(output_path) and not args.overwrite and not args.debug:
         logger.info(f"{output_path} already exists, skipping...")
         return output_path
