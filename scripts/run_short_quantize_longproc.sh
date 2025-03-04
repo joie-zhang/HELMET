@@ -3,7 +3,7 @@
 #       Job blueprint        #
 ##############################
 # Give your job a name, so you can recognize it in the queue overview
-#SBATCH --job-name=8bit_2llm_2k_1hr_50G_helmet_quantize ## CHANGE JOBNAME HERE
+#SBATCH --job-name=1hr_50G_longproc_quantize ## CHANGE JOBNAME HERE
 #SBATCH --array=0-1
 # Remove one # to uncommment
 #SBATCH --output=./joblog/%x-%A_%a.out                          ## Stdout
@@ -43,9 +43,7 @@ PORT=$(shuf -i 30000-65000 -n 1)
 echo "Port                          = $PORT"
 export OMP_NUM_THREADS=8
 TAG=v1
-# CONFIGS=(html_to_tsv_0.5k.yaml)
-CONFIGS=(travel_planning_2k.yaml)
-# CONFIGS=(recall_short.yaml rag_short.yaml longqa_short.yaml summ_short.yaml icl_short.yaml rerank_short.yaml cite_short.yaml)
+CONFIGS=(html_to_tsv_2k.yaml travel_planning_2k.yaml)
 # CONFIGS=(${CONFIGS[8]})
 SEED=42
 QUANTIZE=8
