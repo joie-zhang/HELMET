@@ -1,3 +1,6 @@
 [submodule "longproc_addon/longproc"]
 	path = longproc_addon/longproc
 	url = https://github.com/princeton-pli/LongProc.git
+[submodule "streaming-llm"]
+	path = streaming-llm
+	url = https://github.com/mit-han-lab/streaming-llm.git
