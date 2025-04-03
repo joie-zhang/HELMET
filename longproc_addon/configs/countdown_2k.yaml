@@ -1,6 +1,6 @@
 input_max_length: 32000
 generation_max_length: 3072
-datasets: travel_planning_2k
+datasets: countdown_2k
 test_files: longproc_addon/longproc/data
 demo_files: ""
 use_chat_template: true
