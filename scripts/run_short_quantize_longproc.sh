@@ -3,7 +3,7 @@
 #       Job blueprint        #
 ##############################
 # Give your job a name, so you can recognize it in the queue overview
-#SBATCH --job-name=1hr_50G_longproc_quantize ## CHANGE JOBNAME HERE
+#SBATCH --job-name=longproc_quantize_2hr_100G ## CHANGE JOBNAME HERE
 #SBATCH --array=0-1
 # Remove one # to uncommment
 #SBATCH --output=./joblog/%x-%A_%a.out                          ## Stdout
@@ -12,8 +12,8 @@
 #SBATCH -N 1                                        ##nodes
 #SBATCH -n 1                                        ##tasks
 #SBATCH --cpus-per-task=8
-#SBATCH --mem=50G
-#SBATCH --time=1:00:00
+#SBATCH --mem=100G
+#SBATCH --time=2:00:00
 #SBATCH --gres=gpu:1 --ntasks-per-node=1 -N 1
 #SBATCH --constraint=gpu80
 # Turn on mail notification. There are many possible self-explaining values:
@@ -43,10 +43,12 @@ PORT=$(shuf -i 30000-65000 -n 1)
 echo "Port                          = $PORT"
 export OMP_NUM_THREADS=8
 TAG=v1
-CONFIGS=(html_to_tsv_2k.yaml travel_planning_2k.yaml)
+# CONFIGS=(html_to_tsv_2k.yaml)
+# CONFIGS=(travel_planning_2k.yaml)
+CONFIGS=(countdown_2k.yaml)
 # CONFIGS=(${CONFIGS[8]})
 SEED=42
-QUANTIZE=8
+QUANTIZE=4
 CONTEXT_LEN="2k"
 M_IDX=$IDX
 # Array for models 13B and smaller (2 models)
