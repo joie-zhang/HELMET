@@ -8,6 +8,8 @@ import torch
 from transformers import PreTrainedTokenizer, set_seed
 from tqdm import tqdm
 from tqdm.contrib.concurrent import thread_map
+# from streaming_llm.kv_cache import StartRecentKVCache
+# from streaming_llm.pos_shift.modify_llama import enable_llama_pos_shift_attention
 
 import logging
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s - %(message)s',
@@ -1083,6 +1085,82 @@ class VLLMModel(LLM):
             } for output in outputs
         ]
 
+'''
+
+class StreamingLLMModel(HFModel):
+    def __init__(
+        self,
+        model_name,
+        temperature=0.9,
+        top_p=0.9,
+        max_length=32768,
+        generation_max_length=2048,
+        generation_min_length=0,
+        do_sample=True,
+        stop_newline=False,
+        use_chat_template=False,
+        cache_start_size=4,
+        cache_recent_size=2044,
+        enable_positional_shift=False,
+        **kwargs
+    ):
+        super().__init__(
+            model_name,
+            temperature=temperature,
+            top_p=top_p,
+            max_length=max_length,
+            generation_max_length=generation_max_length,
+            generation_min_length=generation_min_length,
+            do_sample=do_sample,
+            stop_newline=stop_newline,
+            use_chat_template=use_chat_template,
+            **kwargs
+        )
+        
+        k_seq_dim = v_seq_dim = 2
+        self.kv_cache = StartRecentKVCache(
+            start_size=cache_start_size,
+            recent_size=cache_recent_size,
+            k_seq_dim=k_seq_dim,
+            v_seq_dim=v_seq_dim,
+        )
+        
+        if enable_positional_shift:
+            enable_llama_pos_shift_attention(self.model)
+
+    @torch.no_grad()
+    def generate(self, inputs=None, prompt=None, **kwargs):
+        if inputs is None:
+            inputs = self.tokenizer([prompt], return_tensors="pt", max_length=self.max_length-self.generation_max_length, truncation=True)
+        
+        inputs = inputs.to(self.model.device)
+        input_len = inputs.input_ids.size(1)
+        
+        outputs = self.model.generate(
+            **inputs,
+            max_new_tokens=self.generation_max_length,
+            min_new_tokens=self.generation_min_length,
+            do_sample=self.do_sample,
+            temperature=self.temperature,
+            top_p=self.top_p,
+            eos_token_id=self.stop_token_ids,
+            pad_token_id=self.tokenizer.pad_token_id,
+            return_dict_in_generate=True,
+            output_scores=False,
+        )
+        
+        text = self.tokenizer.decode(outputs['sequences'][0, input_len:], skip_special_tokens=True)
+        save_prompt = self.tokenizer.decode(inputs["input_ids"][0][:500]) + " " + self.tokenizer.decode(inputs["input_ids"][0][-500:])
+        output_len = outputs['sequences'].size(1) - input_len
+        
+        return {
+            "output": text,
+            "input_len": input_len,
+            "output_len": output_len,
+            "input_text": save_prompt,
+        }
+
+'''
 
 def load_LLM(args):
     kwargs = {}
@@ -1098,6 +1176,14 @@ def load_LLM(args):
     elif args.use_vllm:
         model_cls = VLLMModel
         kwargs['seed'] = args.seed
+    elif args.model_class == "streamingllm":
+        model_cls = StreamingLLMModel
+        kwargs['seed'] = args.seed
+        kwargs['cache_start_size'] = args.cache_start_size
+        kwargs['cache_recent_size'] = args.cache_recent_size
+        kwargs['enable_positional_shift'] = args.enable_positional_shift
+        if args.quantize is not None:
+            kwargs["quantize"] = args.quantize
     else:
         model_cls = HFModel
         kwargs['seed'] = args.seed

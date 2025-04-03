@@ -52,6 +52,12 @@ def parse_arguments():
     parser.add_argument("--rope_theta", type=int, default=None, help="override rope theta")
     parser.add_argument("--quantize", type=int, default=16, help="4, 8, or 16 bit quantization")
 
+    # streamingLLM arguments
+    parser.add_argument("--model_class", type=str, default="hf", choices=["hf", "vllm", "streamingllm"])
+    parser.add_argument("--cache_start_size", type=int, default=4)
+    parser.add_argument("--cache_recent_size", type=int, default=2044)
+    parser.add_argument("--enable_positional_shift", action="store_true")
+
     # misc
     parser.add_argument("--debug", action="store_true", help="for debugging")
     parser.add_argument("--count_tokens", action="store_true", help="instead of running generation, just count the number of tokens (only for HF models not API)")
