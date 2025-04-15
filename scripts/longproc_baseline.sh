@@ -2,15 +2,14 @@
 ##############################
 #       Job blueprint        #
 ##############################
-#SBATCH --job-name=streamingllm_longproc
-#SBATCH --array=0-2
+#SBATCH --job-name=longproc_50samples_baseline
 #SBATCH --output=./joblog/%x-%A_%a.out                          ## Stdout
 #SBATCH --error=./joblog/%x-%A_%a.err                           ## Stderr
 #SBATCH -N 1                                        ##nodes
 #SBATCH -n 1                                        ##tasks
 #SBATCH --cpus-per-task=8
-#SBATCH --mem=50G
-#SBATCH --time=1:59:00
+#SBATCH --mem=40G
+#SBATCH --time=1:00:00
 #SBATCH --gres=gpu:1 --ntasks-per-node=1 -N 1
 #SBATCH --constraint=gpu80
 #SBATCH --mail-type=ALL
@@ -43,8 +42,11 @@ echo "Port                          = $PORT"
 export OMP_NUM_THREADS=8
 TAG=v1
 
-# CONFIGS=(html_to_tsv_0.5k.yaml countdown_0.5k.yaml)
-CONFIGS=(html_to_tsv_2k.yaml countdown_2k.yaml travel_planning_2k.yaml)
+# CONFIGS=(html_to_tsv_0.5k.yaml)
+# CONFIGS=(countdown_0.5k.yaml)
+# CONFIGS=(countdown_2k.yaml)
+# CONFIGS=(html_to_tsv_2k.yaml)
+# CONFIGS=(travel_planning_2k.yaml)
 # CONFIGS=(${CONFIGS[8]})
 
 SEED=42
@@ -52,14 +54,16 @@ QUANTIZE=16
 CONTEXT_LEN="2k"
 M_IDX=$IDX
 
+# Array for models 13B and smaller (2 models)
 S_MODELS=(
   "Llama-3.1-8B-Instruct" # 0
 #   "Qwen2.5-7B-Instruct" # 1
 )
 MNAME="${S_MODELS[$M_IDX]}"
 
-OUTPUT_DIR="/scratch/gpfs/DANQIC/jz4391/HELMET/output/streamingllm/$CONTEXT_LEN/$MNAME"
-MODEL_NAME="/scratch/gpfs/DANQIC/models/$MNAME"
+OUTPUT_DIR="/scratch/gpfs/DANQIC/jz4391/HELMET/output/$MNAME"
+MODEL_NAME="/scratch/gpfs/DANQIC/models/$MNAME" # load model from local folder
+# $SLURM_ARRAY_JOB_ID
 
 shopt -s nocasematch
 chat_models=".*(chat|instruct|it$|nous|command|Jamba-1.5|MegaBeam).*"
@@ -78,6 +82,5 @@ for CONFIG in "${CONFIGS[@]}"; do
         --model_name_or_path $MODEL_NAME \
         --output_dir $OUTPUT_DIR \
         --quantize $(($QUANTIZE)) \
-        --streamingllm \
         $OPTIONS 
 done

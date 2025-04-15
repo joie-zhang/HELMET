@@ -2,7 +2,7 @@
 ##############################
 #       Job blueprint        #
 ##############################
-#SBATCH --job-name=streamingllm_helmet_rag_16k_32k_gpushare
+#SBATCH --job-name=streamingllm_helmet_32k_gpushare
 #SBATCH --array=0-1
 #SBATCH --output=./joblog/%x-%A_%a.out
 #SBATCH --error=./joblog/%x-%A_%a.err
@@ -29,8 +29,7 @@ echo "Cache                          = $TRANSFORMERS_CACHE"
 
 module purge
 module load anaconda3/2023.3
-module load gcc-toolset/10
-source /opt/rh/gcc-toolset-10/enable
+module load gcc/11
 source /scratch/gpfs/DANQIC/jz4391/MInference/minenv/bin/activate
 
 # Constants
@@ -39,6 +38,7 @@ S_MODELS=("Llama-3.1-8B-Instruct")
 # S_MODELS=("Llama-3.1-8B-Instruct" "Qwen2.5-7B-Instruct")
 # QUANTIZE_VALUES=(8 16)
 QUANTIZE_VALUES=(16)
+# CONTEXT_LENGTHS=("8k" "16k" "32k" "64k")
 CONTEXT_LENGTHS=("16k" "32k")
 
 # Total combinations: models * quantize * context lengths
@@ -61,9 +61,11 @@ QUANTIZE="${QUANTIZE_VALUES[$QUANTIZE_IDX]}"
 CONTEXT_LEN="${CONTEXT_LENGTHS[$CONTEXT_IDX]}"
 
 # Derived variables
-# CONFIGS=("rag_${CONTEXT_LEN}.yaml")
-CONFIGS=("recall_jsonkv_${CONTEXT_LEN}.yaml")
-OUTPUT_DIR="output/$CONTEXT_LEN/bit$QUANTIZE/$MNAME"
+# CONFIGS=("cite_${CONTEXT_LEN}.yaml")
+# CONFIGS=("rerank_${CONTEXT_LEN}.yaml")
+# CONFIGS=("recall_jsonkv_${CONTEXT_LEN}.yaml")
+CONFIGS=("rag_${CONTEXT_LEN}.yaml")
+OUTPUT_DIR="output/streamingllm/$CONTEXT_LEN/$MNAME"
 MODEL_NAME="/scratch/gpfs/DANQIC/models/$MNAME"
 
 # Create output directory
