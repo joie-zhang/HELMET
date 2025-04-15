@@ -1,6 +1,6 @@
-input_max_length: '16384'
+input_max_length: 16384
 datasets: msmarco_rerank_psg
-generation_max_length: '200'
+generation_max_length: 200
 test_files: data/msmarco/test_reranking_data_k130_dep3.jsonl
 demo_files: data/msmarco/test_reranking_data_k10_dep3.jsonl
 use_chat_template: false
