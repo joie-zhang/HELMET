@@ -10,6 +10,7 @@ from tqdm import tqdm
 from tqdm.contrib.concurrent import thread_map
 # from streaming_llm.kv_cache import StartRecentKVCache
 # from streaming_llm.pos_shift.modify_llama import enable_llama_pos_shift_attention
+from minference import MInference
 
 import logging
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s - %(message)s',
@@ -877,6 +878,18 @@ class HFModel(LLM):
                 **model_kwargs
             )
         
+        # Add this block after model loading but before torch.compile:
+        if "minference" in kwargs and kwargs["minference"]:
+            logger.info("Applying MInference patch")
+            minference_patch = MInference(attn_type="minference", model_name=model_name)
+            self.model = minference_patch(self.model)
+    
+            # Add this block after model loading but before torch.compile:
+        if "streamingllm" in kwargs and kwargs["streamingllm"]:
+            logger.info("Applying StreamingLLM patch")
+            minference_patch = MInference(attn_type="minference", model_name=model_name, kv_type="streamingllm")
+            self.model = minference_patch(self.model)
+
         if kwargs.get("torch_compile", True):
             self.model = torch.compile(self.model)
             # self.model.forward = torch.compile(self.model.forward, mode="reduce-overhead", fullgraph=True)

@@ -57,6 +57,10 @@ def parse_arguments():
     parser.add_argument("--cache_start_size", type=int, default=4)
     parser.add_argument("--cache_recent_size", type=int, default=2044)
     parser.add_argument("--enable_positional_shift", action="store_true")
+    
+    # MInference arguments
+    parser.add_argument("--minference", action="store_true", help="use MInference")
+    parser.add_argument("--streamingllm", action="store_true", help="use StreamingLLM")
 
     # misc
     parser.add_argument("--debug", action="store_true", help="for debugging")
