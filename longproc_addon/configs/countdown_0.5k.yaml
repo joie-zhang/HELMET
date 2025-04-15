@@ -2,7 +2,7 @@ input_max_length: 32000
 generation_max_length: 1024
 datasets: countdown_0.5k
 test_files: longproc_addon/longproc/data
-demo_files: ",,"
+demo_files: ""
 use_chat_template: true
 max_test_samples: 50
 temperature: 0.0
