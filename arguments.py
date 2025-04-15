@@ -51,12 +51,6 @@ def parse_arguments():
     parser.add_argument("--use_chat_template", type=ast.literal_eval, choices=[True, False], default=False, help="whether to use chat template")
     parser.add_argument("--rope_theta", type=int, default=None, help="override rope theta")
     parser.add_argument("--quantize", type=int, default=16, help="4, 8, or 16 bit quantization")
-
-    # streamingLLM arguments
-    parser.add_argument("--model_class", type=str, default="hf", choices=["hf", "vllm", "streamingllm"])
-    parser.add_argument("--cache_start_size", type=int, default=4)
-    parser.add_argument("--cache_recent_size", type=int, default=2044)
-    parser.add_argument("--enable_positional_shift", action="store_true")
     
     # MInference arguments
     parser.add_argument("--minference", action="store_true", help="use MInference")

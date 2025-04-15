@@ -10,7 +10,7 @@
 #SBATCH -n 1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=50G
-#SBATCH --time=1:59:00
+#SBATCH --time=1:01:00
 #SBATCH --gres=gpu:1 --ntasks-per-node=1 -N 1
 #SBATCH --constraint=gpu80
 #SBATCH --mail-type=ALL
