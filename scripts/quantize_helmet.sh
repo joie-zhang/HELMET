@@ -2,46 +2,19 @@
 ##############################
 #       Job blueprint        #
 ##############################
-#SBATCH --job-name=minference_helmet_cite_32k_gpushare
-#SBATCH --array=0-1
-#SBATCH --output=./joblog/%x-%A_%a.out
-#SBATCH --error=./joblog/%x-%A_%a.err
-#SBATCH -N 1
-#SBATCH -n 1
+#SBATCH --job-name=1hr_50G_helmet_quantize ## CHANGE JOBNAME HERE
+#SBATCH --array=0-7  # Total combinations: 2 models * 2 quantize values * 2 context lengths = 8
+#SBATCH --output=./joblog/%x-%A_%a.out                          ## Stdout
+#SBATCH --error=./joblog/%x-%A_%a.err                           ## Stderr
+#SBATCH -N 1                                        ##nodes
+#SBATCH -n 1                                        ##tasks
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=50G
-#SBATCH --time=1:59:00
+#SBATCH --time=1:00:00
 #SBATCH --gres=gpu:1 --ntasks-per-node=1 -N 1
 #SBATCH --constraint=gpu80
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=joie@princeton.edu
-
-# Parse command line arguments
-while [[ $# -gt 0 ]]; do
-    case $1 in
-        --cache_start_size)
-            CACHE_START_SIZE="$2"
-            shift 2
-            ;;
-        --cache_recent_size)
-            CACHE_RECENT_SIZE="$2"
-            shift 2
-            ;;
-        --enable_positional_shift)
-            ENABLE_POSITIONAL_SHIFT="$2"
-            shift 2
-            ;;
-        *)
-            echo "Unknown argument: $1"
-            exit 1
-            ;;
-    esac
-done
-
-# Set default values if not provided
-CACHE_START_SIZE=${CACHE_START_SIZE:-4}
-CACHE_RECENT_SIZE=${CACHE_RECENT_SIZE:-2044}
-ENABLE_POSITIONAL_SHIFT=${ENABLE_POSITIONAL_SHIFT:-true}
 
 echo "Date              = $(date)"
 echo "Hostname          = $(hostname -s)"
@@ -54,20 +27,14 @@ echo "Array Job ID                   = $SLURM_ARRAY_JOB_ID"
 echo "Array Task ID                  = $SLURM_ARRAY_TASK_ID"
 echo "Cache                          = $TRANSFORMERS_CACHE"
 
-module purge
-module load anaconda3/2023.3
-module load gcc-toolset/10
-source /opt/rh/gcc-toolset-10/enable
-source /scratch/gpfs/DANQIC/jz4391/MInference/minenv/bin/activate
+source env/bin/activate
 
 # Constants
 SEED=42
-S_MODELS=("Llama-3.1-8B-Instruct")
-# S_MODELS=("Llama-3.1-8B-Instruct" "Qwen2.5-7B-Instruct")
-# QUANTIZE_VALUES=(8 16)
-QUANTIZE_VALUES=(16)
+S_MODELS=("Llama-3.1-8B-Instruct" "Qwen2.5-7B-Instruct")
+QUANTIZE_VALUES=(8 16)
 # CONTEXT_LENGTHS=("8k" "16k" "32k" "64k")
-CONTEXT_LENGTHS=("32k")
+CONTEXT_LENGTHS=("16k" "32k")
 
 # Total combinations: models * quantize * context lengths
 TOTAL_MODELS=${#S_MODELS[@]}
@@ -90,11 +57,8 @@ CONTEXT_LEN="${CONTEXT_LENGTHS[$CONTEXT_IDX]}"
 
 # Derived variables
 CONFIGS=("cite_${CONTEXT_LEN}.yaml")
-OUTPUT_DIR="output/$CONTEXT_LEN/bit$QUANTIZE/$MNAME"
-MODEL_NAME="/scratch/gpfs/DANQIC/models/$MNAME"
-
-# Create output directory
-mkdir -p "$OUTPUT_DIR"
+OUTPUT_DIR="output/$CONTEXT_LEN/bit$QUANTIZE/$MNAME/$SLURM_ARRAY_JOB_ID"
+MODEL_NAME="/scratch/gpfs/DANQIC/models/$MNAME" # CHANGE PATH HERE or you can change the array to load from HF
 
 shopt -s nocasematch
 chat_models=".*(chat|instruct|it$|nous|command|Jamba-1.5|MegaBeam).*"
@@ -119,11 +83,7 @@ for CONFIG in "${CONFIGS[@]}"; do
         --output_dir $OUTPUT_DIR \
         --tag v1 \
         --model_name_or_path $MODEL_NAME \
-        --minference \
-        --model_class streamingllm \
-        --cache_start_size $CACHE_START_SIZE \
-        --cache_recent_size $CACHE_RECENT_SIZE \
-        --enable_positional_shift $ENABLE_POSITIONAL_SHIFT \
+        --quantize $(($QUANTIZE)) \
         $OPTIONS
 done
 

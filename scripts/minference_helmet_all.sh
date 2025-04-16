@@ -63,6 +63,8 @@ CONTEXT_LEN="${CONTEXT_LENGTHS[$CONTEXT_IDX]}"
 # Derived variables
 # CONFIGS=("rag_${CONTEXT_LEN}.yaml")
 CONFIGS=("recall_jsonkv_${CONTEXT_LEN}.yaml")
+# CONFIGS=("cite_${CONTEXT_LEN}.yaml")
+# CONFIGS=("rerank_${CONTEXT_LEN}.yaml")
 OUTPUT_DIR="output/$CONTEXT_LEN/bit$QUANTIZE/$MNAME"
 MODEL_NAME="/scratch/gpfs/DANQIC/models/$MNAME"
 
