@@ -7,6 +7,8 @@ import torch
 import copy
 
 from nltk import sent_tokenize
+import nltk
+nltk.download('punkt')
 import numpy as np
 from rouge_score import rouge_scorer, scoring
 from tqdm import tqdm
