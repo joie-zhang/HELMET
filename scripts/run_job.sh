@@ -1,12 +1,13 @@
 #!/bin/bash
 
 # Verify required variables are set
-if [ -z "$BASE_CONFIGS" ] || [ -z "$CONTEXT_LENGTHS" ] || [ -z "$MODELS" ] || [ -z "$EXP_TYPE" ] || [ -z "$SEED" ]; then
+if [ -z "$BASE_CONFIGS" ] || [ -z "$CONTEXT_LENGTHS" ] || [ -z "$MODELS" ] || [ -z "$EXP_TYPE" ] || [ -z "$BENCHMARK" ] || [ -z "$SEED" ]; then
     echo "Error: Required variables are not set"
     echo "BASE_CONFIGS: ${BASE_CONFIGS[@]}"
     echo "CONTEXT_LENGTHS: ${CONTEXT_LENGTHS[@]}"
     echo "MODELS: ${MODELS[@]}"
     echo "EXP_TYPE: $EXP_TYPE"
+    echo "BENCHMARK: $BENCHMARK"
     echo "SEED: $SEED"
     exit 1
 fi
@@ -116,9 +117,15 @@ echo "Debug: SLURM_ARRAY_TASK_ID = $SLURM_ARRAY_TASK_ID"
 echo "Debug: Selected CONFIG = $CONFIG"
 echo "Debug: Full config path = configs/$CONFIG"
 
+if [ "$BENCHMARK" == "longproc" ]; then
+    CONFIG_PATH="/scratch/gpfs/DANQIC/jz4391/HELMET/longproc_addon/configs/$CONFIG"
+else
+    CONFIG_PATH="/scratch/gpfs/DANQIC/jz4391/HELMET/configs/$CONFIG"
+fi
+
 # Run evaluation for the single configuration
 python /scratch/gpfs/DANQIC/jz4391/HELMET/eval.py \
-    --config "/scratch/gpfs/DANQIC/jz4391/HELMET/configs/$CONFIG" \
+    --config $CONFIG_PATH \
     --seed $SEED \
     --output_dir $OUTPUT_DIR \
     --tag "$TAG" \

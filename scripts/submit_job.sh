@@ -14,7 +14,7 @@ ARRAY_MAX=$(( ${#BASE_CONFIGS[@]} * ${#CONTEXT_LENGTHS[@]} * ${#MODELS[@]} - 1 )
 
 # Submit the job
 sbatch \
-    --export=ALL,BASE_CONFIGS="$(IFS='|||'; echo "${BASE_CONFIGS[*]}")",CONTEXT_LENGTHS="$(IFS='|||'; echo "${CONTEXT_LENGTHS[*]}")",MODELS="$(IFS='|||'; echo "${MODELS[*]}")",EXP_TYPE="$EXP_TYPE",SEED="$SEED" \
+    --export=ALL,BASE_CONFIGS="$(IFS='|||'; echo "${BASE_CONFIGS[*]}")",CONTEXT_LENGTHS="$(IFS='|||'; echo "${CONTEXT_LENGTHS[*]}")",MODELS="$(IFS='|||'; echo "${MODELS[*]}")",EXP_TYPE="$EXP_TYPE",BENCHMARK="$BENCHMARK",SEED="$SEED" \
     --array=0-$ARRAY_MAX \
     --time=$JOB_TIME \
     --job-name=$JOB_NAME \
