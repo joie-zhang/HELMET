@@ -29,7 +29,7 @@ from transformers import (
 from utils import normalize_answer, get_max_memory, remove_citations
 
 QA_MODEL="gaotianyu1350/roberta-large-squad"
-AUTOAIS_MODEL="google/t5_xxl_true_nli_mixture"
+AUTOAIS_MODEL="/scratch/gpfs/DANQIC/models/t5_xxl_true_nli_mixture"
 
 global autoais_model, autoais_tokenizer
 autoais_model, autoais_tokenizer = None, None
