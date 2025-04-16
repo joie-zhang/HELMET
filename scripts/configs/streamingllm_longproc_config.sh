@@ -1,9 +1,12 @@
-# streamingllm_helmet_config.sh
-declare -a BASE_CONFIGS=("cite" "rerank" "recall_jsonkv" "rag")
-declare -a CONTEXT_LENGTHS=("16k" "32k")
+
+# streamingllm_longproc_config.sh
+declare -a BASE_CONFIGS=("countdown" "html_to_tsv")
+declare -a CONTEXT_LENGTHS=("0.5k")
+# declare -a BASE_CONFIGS=("countdown" "travel_planning" "html_to_tsv")
+# declare -a CONTEXT_LENGTHS=("2k")
 declare -a MODELS=("Llama-3.1-8B-Instruct")
-EXP_TYPE="minference"
-BENCHMARK="helmet"
+EXP_TYPE="streamingllm"
+BENCHMARK="longproc"
 SEED=42
 
 # SLURM Configuration
