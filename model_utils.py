@@ -879,13 +879,59 @@ class HFModel(LLM):
         # Add this block after model loading but before torch.compile:
         if "minference" in kwargs and kwargs["minference"]:
             logger.info("Applying MInference patch")
-            minference_patch = MInference(attn_type="minference", model_name=model_name)
+            minference_patch = MInference(
+                attn_type="minference", 
+                model_name=model_name
+            )
             self.model = minference_patch(self.model)
     
-            # Add this block after model loading but before torch.compile:
         if "streamingllm" in kwargs and kwargs["streamingllm"]:
             logger.info("Applying StreamingLLM patch")
-            minference_patch = MInference(attn_type="a_shape", model_name=model_name, kv_type="streamingllm")
+            minference_patch = MInference(
+                attn_type="a_shape", 
+                model_name=model_name, 
+                kv_type="streamingllm"
+            )
+            self.model = minference_patch(self.model)
+
+        # For Quest
+        if "quest" in kwargs and kwargs["quest"]:
+            logger.info("Applying Quest patch")
+            minference_patch = MInference(
+                attn_type="dense",  # Quest modifies KV cache, uses dense attention
+                model_name=model_name,
+                kv_type="quest"
+            )
+            self.model = minference_patch(self.model)
+
+        # For SnapKV
+        if "snapkv" in kwargs and kwargs["snapkv"]:
+            logger.info("Applying SnapKV patch")
+            minference_patch = MInference(
+                attn_type="dense",  # SnapKV is a KV cache compression method
+                model_name=model_name,
+                kv_type="snapkv"
+            )
+            self.model = minference_patch(self.model)
+
+        # For PyramidKV
+        if "pyramidkv" in kwargs and kwargs["pyramidkv"]:
+            logger.info("Applying PyramidKV patch")
+            minference_patch = MInference(
+                attn_type="dense",  # PyramidKV is a KV cache compression method
+                model_name=model_name,
+                kv_type="pyramidkv"
+            )
+            self.model = minference_patch(self.model)
+
+        # For KIVI
+        if "kivi" in kwargs and kwargs["kivi"]:
+            logger.info("Applying KIVI patch")
+            minference_patch = MInference(
+                attn_type="dense",  # KIVI is a KV cache compression method
+                model_name=model_name,
+                kv_type="kivi"
+            )
             self.model = minference_patch(self.model)
 
         if kwargs.get("torch_compile", True):
