@@ -1,8 +1,10 @@
 # streamingllm_helmet_config.sh
-declare -a BASE_CONFIGS=("cite" "rerank" "recall_jsonkv" "rag")
+# declare -a BASE_CONFIGS=("cite" "rerank" "recall_jsonkv" "rag")
+# declare -a CONTEXT_LENGTHS=("16k" "32k")
+declare -a BASE_CONFIGS=("cite" "rerank" "recall_jsonkv" "rag_nq" "rag_trivia" "rag_popqa" "rag_hotpotqa")
 declare -a CONTEXT_LENGTHS=("16k" "32k")
 declare -a MODELS=("Llama-3.1-8B-Instruct")
-EXP_TYPE="minference"
+EXP_TYPE="kivi"
 BENCHMARK="helmet"
 SEED=42
 
