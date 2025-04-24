@@ -1,12 +1,24 @@
 # streamingllm_helmet_config.sh
 # declare -a BASE_CONFIGS=("cite" "rerank" "recall_jsonkv" "rag")
-# declare -a CONTEXT_LENGTHS=("16k" "32k")
-declare -a BASE_CONFIGS=("cite" "rerank" "recall_jsonkv" "rag_nq" "rag_trivia" "rag_popqa" "rag_hotpotqa")
-declare -a CONTEXT_LENGTHS=("16k" "32k")
+declare -a BASE_CONFIGS=("cite" "rag_hotpotqa")
+declare -a CONTEXT_LENGTHS=("16k")
+# declare -a BASE_CONFIGS=("cite" "rerank" "recall_jsonkv" "rag_nq" "rag_trivia" "rag_popqa" "rag_hotpotqa")
+# declare -a BASE_CONFIGS=("cite" "rerank" "recall_jsonkv" "rag_nq" "rag_hotpotqa")
+# declare -a CONTEXT_LENGTHS=("32k")
 declare -a MODELS=("Llama-3.1-8B-Instruct")
-EXP_TYPE="kivi"
+EXP_TYPE="minference"
 BENCHMARK="helmet"
 SEED=42
+
+# # streamingllm_longproc_config.sh
+# # declare -a BASE_CONFIGS=("countdown" "html_to_tsv")
+# # declare -a CONTEXT_LENGTHS=("0.5k")
+# declare -a BASE_CONFIGS=("travel_planning" "countdown" "html_to_tsv")
+# declare -a CONTEXT_LENGTHS=("2k")
+# declare -a MODELS=("Llama-3.1-8B-Instruct")
+# EXP_TYPE="pyramidkv"
+# BENCHMARK="longproc"
+# SEED=42
 
 # SLURM Configuration
 JOB_TIME="1:00:00"
