@@ -1,5 +1,4 @@
 import os
-import sys
 import json
 import numpy as np
 import pandas as pd
@@ -80,10 +79,7 @@ class arguments:
     output_dir: str = "output"
     popularity_threshold: float = 3
     flenqa_ctx_size: int = 1000
-    context_length: str = "8k"  # New field for context length
-    experiment_type: str = "standard"  # Can be "standard", "minference", or "streamingllm"
-    quantize: int = 16  # Can be 16, 8, or 4
-    
+        
     category: str = "synthetic"
     
     def update(self, new):
@@ -95,26 +91,13 @@ class arguments:
         tag = self.tag
         if "flenqa" in self.dataset:
             tag += f"_ctx{self.flenqa_ctx_size}"
-            
-        # Build the base filename
-        # filename = "{args.dataset}_{tag}_{args.test_name}_in{args.input_max_length}_size{args.max_test_samples}_shots{args.shots}_samp{args.do_sample}max{args.generation_max_length}min{args.generation_min_length}t{args.temperature}p{args.top_p}_chat{args.use_chat_template}_{args.seed}.json".format(args=self, tag=tag)
-        filename = "{args.dataset}_{args.quantize}bit_{tag}_{args.test_name}_in{args.input_max_length}_size{args.max_test_samples}_shots{args.shots}_samp{args.do_sample}max{args.generation_max_length}min{args.generation_min_length}t{args.temperature}p{args.top_p}_chat{args.use_chat_template}_{args.seed}.json".format(args=self, tag=tag)
-        
-        # Determine the correct directory based on experiment type
-        if self.experiment_type == "standard":
-            base_dir = os.path.join(self.output_dir, self.context_length, f"bit{args.quantize}", model)
-        elif self.experiment_type == "minference":
-            base_dir = os.path.join(self.output_dir, "minference", self.context_length, f"bit{args.quantize}", args.model_name_or_path)
-        elif self.experiment_type == "streamingllm":
-            base_dir = os.path.join(self.output_dir, "minference", "streamingllm", self.context_length, f"bit{args.quantize}", args.model_name_or_path)
-        
-        path = os.path.join(base_dir, filename)
+        path = os.path.join(self.output_dir, "{args.dataset}_{tag}_{args.test_name}_in{args.input_max_length}_size{args.max_test_samples}_shots{args.shots}_samp{args.do_sample}max{args.generation_max_length}min{args.generation_min_length}t{args.temperature}p{args.top_p}_chat{args.use_chat_template}_{args.seed}.json".format(args=self, tag=tag))
 
-        # Check for alternative file formats
         if os.path.exists(path.replace(".json", "-gpt4eval_o.json")):
             return path.replace(".json", "-gpt4eval_o.json")
         if "alce" in self.dataset:
             return path.replace(".json", ".json.score")
+        
         if os.path.exists(path + ".score"):
             return path + ".score"
         return path
@@ -180,274 +163,182 @@ class arguments:
 
         return dfs.to_dict("records")
 
+# ... existing code until the main section ...
+
 if __name__ == "__main__":
-    # Define context lengths to evaluate
-    context_lengths = ["0.5k", "2k", "8k", "16k", "32k"]
+    output_root = "output"
+    models_configs = []
     
-    # Define experiment types
-    experiment_types = ["standard", "minference", "streamingllm"]
-    
-    # comment out the models you don't want to include, or add the new ones 
-    models_configs = [
-        # {"model": "gpt-4-0125-preview", "use_chat_template": True, "training_length": 128000},
-        # {"model": "gpt-4o-mini-2024-07-18", "use_chat_template": True, "training_length": 128000},
-        # {"model": "gpt-4o-2024-05-13", "use_chat_template": True, "training_length": 128000},
-        # {"model": "gpt-4o-2024-08-06", "use_chat_template": True, "training_length": 128000},
-        # {"model": "claude-3-5-sonnet-20240620", "use_chat_template": True, "training_length": 200000},
-        # {"model": "gemini-1.5-flash-001", "use_chat_template": True, "training_length": 1048576},
-        # {"model": "gemini-1.5-pro-001", "use_chat_template": True, "training_length": 2097152},
+    print("Discovering models...")
+    # Walk through the output directory structure
+    for method in os.listdir(output_root):
+        method_dir = os.path.join(output_root, method)
+        if not os.path.isdir(method_dir):
+            continue
+            
+        print(f"\nMethod: {method}")
+        # Each method directory contains context length subdirectories
+        for ctx_len in os.listdir(method_dir):
+            ctx_dir = os.path.join(method_dir, ctx_len)
+            if not os.path.isdir(ctx_dir):
+                continue
+                
+            print(f"  Context length: {ctx_len}")
+            # Each context length directory contains model directories
+            for model_name in os.listdir(ctx_dir):
+                model_dir = os.path.join(ctx_dir, model_name)
+                if not os.path.isdir(model_dir):
+                    continue
+                
+                # Create model config
+                try:
+                    # Keep original ctx_len string for directory path
+                    ctx_length = int(ctx_len.replace('k', '000'))
+                    model_config = {
+                        "model": model_name,
+                        "use_chat_template": "Instruct" in model_name,
+                        "training_length": ctx_length,
+                        "method": method,
+                        "context_length": ctx_length,
+                        "ctx_len_str": ctx_len  # Store original string version
+                    }
+                    models_configs.append(model_config)
+                    print(f"    Added model: {model_name}")
+                except ValueError as e:
+                    print(f"    Skipped invalid context length: {ctx_len}")
+                    continue
 
-        # llama 2 based models
-        # {"model": "Llama-2-7B-32K", "use_chat_template": False, "training_length": 32768},
-        # {"model": "Llama-2-7B-32K-Instruct", "training_length": 32768},
-        # {"model": "llama-2-7b-80k", "use_chat_template": False, "training_length": 80000},
-        # {"model": "Yarn-Llama-2-7b-64k", "use_chat_template": False, "training_length": 65536},
-        # {"model": "Yarn-Llama-2-7b-128k", "use_chat_template": False, "training_length": 131072},
-        
-        # llama 3 models
-        # {"model": "Meta-Llama-3-8B", "use_chat_template": False, "training_length": 8192},
-        # {"model": "Meta-Llama-3-8B-Instruct", "training_length": 8192},
-        # {"model": "Meta-Llama-3-8B-Theta16M", "use_chat_template": False, "training_length": 8192},
-        # {"model": "Meta-Llama-3-8B-Instruct-Theta16M", "training_length": 8192},
-        # {"model": "Meta-Llama-3-70B-Theta16M", "use_chat_template": False, "training_length": 8192},
-        # {"model": "Meta-Llama-3-70B-Instruct-Theta16M", "training_length": 8192},
-        
-        # {"model": "Llama-3.1-8B", "use_chat_template": False, "training_length": 131072},
-        {"model": "Llama-3.1-8B-Instruct", "training_length": 131072},
-        # {"model": "Llama-3.1-70B", "use_chat_template": False, "training_length": 131072},
-        # {"model": "Llama-3.1-70B-Instruct", "training_length": 131072},
-        # {"model": "Llama-3.3-70B-Instruct", "training_length": 131072},
-        
-        # {"model": "Llama-3.2-1B", "use_chat_template": False, "training_length": 131072},
-        # {"model": "Llama-3.2-1B-Instruct", "training_length": 131072},
-        # {"model": "Llama-3.2-3B", "use_chat_template": False, "training_length": 131072},
-        # {"model": "Llama-3.2-3B-Instruct", "training_length": 131072},
-        
-        # mistral models
-        # {"model": "Mistral-7B-v0.1", "use_chat_template": False, "training_length": 8192},
-        # {"model": "Mistral-7B-Instruct-v0.1", "training_length": 8192},
-        # {"model": "Mistral-7B-Instruct-v0.2", "training_length": 32768},
-        # {"model": "Mistral-7B-v0.3", "use_chat_template": False, "training_length": 32768},
-        # {"model": "Mistral-7B-Instruct-v0.3", "training_length": 32768},
-        # {"model": "Ministral-8B-Instruct-2410", "training_length": 131072},
-        
-        # {"model": "Mistral-Nemo-Base-2407", "use_chat_template": False, "training_length": 128000},
-        # {"model": "Mistral-Nemo-Instruct-2407", "training_length": 128000},
-        # {"model": "MegaBeam-Mistral-7B-512k", "training_length": 524288},
-        
-        # yi models
-        # {"model": "Yi-6B-200K", "use_chat_template": False, "training_length": 200000},
-        # {"model": "Yi-9B-200K", "use_chat_template": False, "training_length": 200000},
-        # {"model": "Yi-34B-200K", "use_chat_template": False, "training_length": 200000},
-        # {"model": "Yi-1.5-9B-32K", "use_chat_template": False, "training_length": 32768},
-        
-        # phi models
-        # {"model": "Phi-3-mini-128k-instruct", "training_length": 131072},
-        # {"model": "Phi-3-small-128k-instruct", "training_length": 131072},
-        # {"model": "Phi-3-medium-128k-instruct", "training_length": 131072},
-        # {"model": "Phi-3.5-mini-instruct", "training_length": 131072},
-        
-        # qwen models
-        # {"model": "Qwen2-7B", "use_chat_template": False, "training_length": 32768},
-        # {"model": "Qwen2-7B-Instruct", "training_length": 32768},
-        # {"model": "Qwen2-57B-A14B", "use_chat_template": False, "training_length": 32768},
-        # {"model": "Qwen2-57B-A14B-Instruct", "training_length": 32768},
-        # {"model": "Qwen2.5-1.5B", "use_chat_template": False, "training_length": 32768},
-        # {"model": "Qwen2.5-1.5B-Instruct", "training_length": 32768},
-        # {"model": "Qwen2.5-3B", "use_chat_template": False, "training_length": 32768},
-        # {"model": "Qwen2.5-3B-Instruct", "training_length": 32768},
-        # {"model": "Qwen2.5-7B", "use_chat_template": False, "training_length": 131072},
-        {"model": "Qwen2.5-7B-Instruct", "training_length": 131072},
-        # {"model": "Qwen2.5-72B-Instruct", "training_length": 131072},
-        
-        # prolong
-        # {"model": "Llama-3-8B-ProLong-512k-Instruct", "training_length": 524288},
-        
-        # gemma 2 models
-        # {"model": "gemma-2-9b", "use_chat_template": False, "training_length": 8192},
-        # {"model": "gemma-2-9b-it", "training_length": 8192},
-        # {"model": "gemma-2-9b-it-Theta320K", "training_length": 8192},
-
-        # {"model": "gemma-2-27b", "use_chat_template": False, "training_length": 8192},
-        # {"model": "gemma-2-27b-it", "training_length": 8192},
-        # {"model": "gemma-2-27b-it-Theta320K", "training_length": 8192},
-        
-        # others
-        # {"model": "c4ai-command-r-v01", "training_length": 131072},
-        # {"model": "Jamba-v0.1", "use_chat_template": False, "training_length": 262144},
-        # {"model": "AI21-Jamba-1.5-Mini", "training_length": 262144},
-    ]
-
-    # set your configs here, only include the ones that you ran
-    config_files = [
-        # HELMET configs
-        "configs/rerank_16k.yaml", "configs/rerank_32k.yaml",
-        "configs/cite_16k.yaml", "configs/cite_32k.yaml",
-        "configs/rag_16k.yaml", "configs/rag_32k.yaml",
-        "configs/recall_jsonkv_16k.yaml", "configs/recall_jsonkv_32k.yaml",
-        
-        # LongProc configs
-        "longproc_addon/configs/countdown_2k.yaml",
-        "longproc_addon/configs/travel_planning_2k.yaml",
-        "longproc_addon/configs/html_to_tsv_2k.yaml",
-    ]
-
+    print("\nDiscovering dataset configs...")
     dataset_configs = []
-    for file in config_files:
-        try: 
-            c = yaml.safe_load(open(file))
+    for model_config in models_configs:
+        # Use original ctx_len string for path
+        model_dir = os.path.join(output_root, model_config["method"], 
+                               model_config["ctx_len_str"], 
+                               model_config["model"])
         
-            # Set default values for optional fields
-            defaults = {
-                'max_test_samples': 100,  # Default to 100 samples
-                'use_chat_template': False,  # Default to False
-                'shots': 2,  # Default to 2 shots
-                'input_max_length': 131072,  # Default max input length
-                'generation_max_length': 100,  # Default max generation length
+        if not os.path.exists(model_dir):
+            print(f"Model directory not found: {model_dir}")
+            continue
+            
+        print(f"\nChecking model dir: {model_dir}")
+        print(f"Directory contents: {os.listdir(model_dir)}")
+        
+        for filename in os.listdir(model_dir):
+            if not filename.endswith('.json.score'):
+                continue
+                
+            print(f"  Processing score file: {filename}")
+            # Parse filename to extract dataset config parameters
+            parts = filename.split('_')
+            dataset = parts[0]
+            if dataset == "kilt":
+                dataset = parts[1]
+            
+            print(f"    Dataset identified: {dataset}")
+            
+            # Extract parameters from filename
+            params = {
+                'input_max_length': 32768,
+                'generation_max_length': 100,
+                'max_test_samples': 100,
+                'shots': 2,
+                'use_chat_template': False
             }
             
-            # Update defaults with actual values from config
-            for key, default_value in defaults.items():
-                if key not in c:
-                    c[key] = default_value
-                        
-            # Convert single values to lists
-            if isinstance(c.get('datasets'), str):
-                datasets = c['datasets'].split(',')
-            else:
-                datasets = [str(c['datasets'])]
-                
-            if isinstance(c.get('test_files'), str):
-                test_files = c['test_files'].split(',')
-            else:
-                test_files = [str(c['test_files'])]
-                
-            if isinstance(c.get('input_max_length'), str):
-                input_lengths = c['input_max_length'].split(',')
-            else:
-                input_lengths = [str(c['input_max_length'])] * len(datasets)
-                
-            if isinstance(c.get('generation_max_length'), str):
-                gen_lengths = c['generation_max_length'].split(',')
-            else:
-                gen_lengths = [str(c['generation_max_length'])] * len(datasets)
+            for part in parts:
+                if part.startswith('in'):
+                    params['input_max_length'] = int(part[2:])
+                elif part.startswith('max'):
+                    params['generation_max_length'] = int(part[3:])
+                elif part.startswith('size'):
+                    params['max_test_samples'] = int(part[4:])
+                elif part.startswith('shots'):
+                    params['shots'] = int(part[5:])
+                elif part.startswith('chat'):
+                    params['use_chat_template'] = part[4:].lower() == 'true'
+            
+            print(f"    Extracted params: {params}")
+            
+            test_parts = [p for p in parts if 'test' in p or 'dev' in p]
+            test_name = test_parts[0] if test_parts else 'test'
+            
+            dataset_config = {
+                "dataset": dataset,
+                "test_name": test_name,
+                **params
+            }
+            
+            if dataset_config not in dataset_configs:
+                dataset_configs.append(dataset_config)
+                print(f"    Added dataset config: {dataset} - {test_name}")
 
-            # Make sure all lists have the same length
-            for d, t, l, g in zip(datasets, test_files, input_lengths, gen_lengths):
-                dataset_configs.append({
-                    "dataset": d, 
-                    "test_name": os.path.basename(os.path.splitext(t)[0]), 
-                    "input_max_length": int(l), 
-                    "generation_max_length": int(g), 
-                    "max_test_samples": c['max_test_samples'], 
-                    'use_chat_template': c['use_chat_template'], 
-                    'shots': c['shots']
-                })
-        except Exception as e:
-            print(f"Error loading config file {file}: {str(e)}")
-            continue
-
-    if not dataset_configs:
-        print("Warning: No valid dataset configurations were loaded!")
-    else:
-        print(f"Successfully loaded {len(dataset_configs)} dataset configurations")
-        print(dataset_configs)
-
+    print(f"\nFound {len(models_configs)} models and {len(dataset_configs)} dataset configs")
+    print("\nModel configs:")
+    for mc in models_configs:
+        print(f"  {mc}")
+    print("\nDataset configs:")
+    for dc in dataset_configs:
+        print(f"  {dc}")
+    
     failed_paths = []
     df = []
+    print("\nCollecting results...")
+    for model in tqdm(models_configs):
+        args = arguments()
+        args.tag = "v1"
+        # Use original ctx_len string for path
+        args.output_dir = os.path.join("output", model['method'], 
+                                     model["ctx_len_str"], 
+                                     model["model"])
     
-    # Add debug counters
-    total_attempts = 0
-    successful_metrics = 0
-    
-    # Iterate through experiment types and context lengths
-    for exp_type in experiment_types:
-        for ctx_len in context_lengths:
-            for model in tqdm(models_configs, desc=f"{exp_type}-{ctx_len}"):
-                args = arguments()
-                args.tag = "v1"  # SET YOUR TAG HERE
-                args.output_dir = "output"  # Now using root output dir
-                args.context_length = ctx_len
-                args.experiment_type = exp_type
+        for dataset in dataset_configs:
+            args.update(dataset)
+            args.update(model)
+
+            print(f"\nProcessing {model['model']} - {dataset['dataset']}")
+            full_path = args.get_path()
+            print(f"Looking for file at: {full_path}")
+            print(f"File exists: {os.path.exists(full_path)}")
+            
+            metric = args.get_averaged_metric()
+            if metric is None:
+                failed_paths.append(full_path)
+                print(f"  Failed to get metric")
+                continue
                 
-                for dataset in dataset_configs:
-                    total_attempts += 1
-                    args.update(dataset)
-                    args.update(model)
+            dsimple, mnames = args.get_metric_name()
+            if dsimple is None:
+                print(f"  Unknown dataset metrics for: {dataset['dataset']}")
+                continue
 
-                    # Print the path we're trying to access
-                    path = args.get_path()
-                    print(f"\nTrying path: {path}")
-                    
-                    metric = args.get_averaged_metric()
-                    if metric is None:
-                        failed_paths.append(path)
-                        continue
-                        
-                    dsimple, mnames = args.get_metric_name()
-                    if dsimple is None:
-                        print(f"Warning: No metric found for dataset {args.dataset}")
-                        continue
-                        
-                    successful_metrics += 1
-                    
-                    # Create a base dictionary with all the fields we want to include
-                    base_entry = {
-                        "model": model["model"],
-                        "context_length": ctx_len,
-                        "experiment_type": exp_type,
-                        "input_max_length": args.input_max_length,
-                        "test_data": f"{args.dataset}-{args.test_name}-{args.input_max_length}"
-                    }
-                    
-                    for k, m in metric.items():
-                        entry = base_entry.copy()
-                        entry.update({
-                            "metric_name": k,
-                            "metric": m,
-                            "dataset_simple": dsimple + " " + k
-                        })
-                        df.append(entry)
+            print(f"  Got metrics: {metric}")
+            for k, m in metric.items():
+                row_data = {**asdict(args), **model,
+                    "metric_name": k,
+                    "metric": m, 
+                    "dataset_simple": dsimple + " " + k, 
+                    "test_data": f"{args.dataset}-{args.test_name}-{args.input_max_length}"
+                }
+                df.append(row_data)
+                print(f"    Added result: {k}: {m}")
 
-    # Print debug information
-    print(f"\nTotal attempts: {total_attempts}")
-    print(f"Successful metrics: {successful_metrics}")
-    print(f"Failed paths: {len(failed_paths)}")
-
-    # Create the main results dataframe
     if not df:
-        print("\nNo results were found! Check if the paths and experiment configurations are correct.")
-        sys.exit(1)
-        
+        print("\nNo results were collected! Check the paths and file structure.")
+        print("Failed paths:", failed_paths)
+        exit(1)
+
+    print("\nCreating DataFrame...")
     all_df = pd.DataFrame(df)
     print("\nDataFrame columns:", all_df.columns.tolist())
-    print("\nDataFrame shape:", all_df.shape)
+    print("\nFirst few rows of data:")
+    print(all_df.head())
     
-    # Create pivot tables for each experiment type
-    for exp_type in experiment_types:
-        exp_df = all_df[all_df["experiment_type"] == exp_type]  # Use dictionary-style access
-        if len(exp_df) == 0:  # Skip if no results for this experiment type
-            print(f"\nNo results found for experiment type: {exp_type}")
-            continue
-        
-        print(f"\nFound {len(exp_df)} results for {exp_type}")
-        
-        lf_df = exp_df.pivot_table(
-            index=["model", "context_length", "input_max_length"],
-            columns="dataset_simple",
-            values="metric",
-            sort=False
-        )
-        lf_df = lf_df.reset_index()
-        
-        # Save to CSV
-        output_file = f"results_{exp_type}.csv"
-        print(f"\nSaving {exp_type} results to {output_file}")
-        print(lf_df.to_csv(index=False))
-        lf_df.to_csv(output_file, index=False)
+    lf_df = all_df.pivot_table(index=["model", "input_max_length", "method", "context_length"], 
+                              columns="dataset_simple", 
+                              values="metric", 
+                              sort=False)
+    lf_df = lf_df.reset_index()
 
-    print("\nWarning, failed to get the following paths (first 10 shown):")
-    for path in failed_paths[:10]:
-        print(f"  - {path}")
-    if len(failed_paths) > 10:
-        print(f"  ... and {len(failed_paths) - 10} more")
+    print(lf_df.to_csv(index=False))
+
+    print("\nWarning, failed to get the following paths, make sure that these are correct or the printed results will not be accurate:", failed_paths)

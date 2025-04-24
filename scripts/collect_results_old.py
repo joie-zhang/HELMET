@@ -8,13 +8,17 @@ from tqdm import tqdm
 
 dataset_to_metrics = {
     "json_kv": "substring_exact_match",
+    
     "nq": "substring_exact_match",
     "popqa": "substring_exact_match",
     "triviaqa": "substring_exact_match",
     "hotpotqa": "substring_exact_match",
     
-    "narrativeqa": ["gpt-4-score"],
     "msmarco_rerank_psg": "NDCG@10",
+    "alce_asqa": ["str_em", "citation_rec", "citation_prec"],
+    
+    "alce_qampari": ["qampari_rec_top5", "citation_rec", "citation_prec"],
+    "narrativeqa": ["gpt-4-score"],
     
     "trec_coarse": "exact_match",
     "trec_fine": "exact_match",
@@ -42,9 +46,6 @@ dataset_to_metrics = {
     "infbench_qa": ["rougeL_f1"],
     "infbench_choice": ["exact_match"],
     "infbench_sum": ["gpt-4-f1"],
-    
-    "alce_asqa": ["str_em", "citation_rec", "citation_prec"],
-    "alce_qampari": ["qampari_rec_top5", "citation_rec", "citation_prec"],
 }
 
 dataset_to_metrics = {k: [v] if isinstance(v, str) else v for k, v in dataset_to_metrics.items()}
