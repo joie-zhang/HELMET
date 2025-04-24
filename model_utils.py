@@ -885,7 +885,7 @@ class HFModel(LLM):
             )
             self.model = minference_patch(self.model)
     
-        if "streamingllm" in kwargs and kwargs["streamingllm"]:
+        elif "streamingllm" in kwargs and kwargs["streamingllm"]:
             logger.info("Applying StreamingLLM patch")
             minference_patch = MInference(
                 attn_type="a_shape", 
@@ -895,7 +895,7 @@ class HFModel(LLM):
             self.model = minference_patch(self.model)
 
         # For Quest
-        if "quest" in kwargs and kwargs["quest"]:
+        elif "quest" in kwargs and kwargs["quest"]:
             logger.info("Applying Quest patch")
             minference_patch = MInference(
                 attn_type="dense",  # Quest modifies KV cache, uses dense attention
@@ -905,7 +905,7 @@ class HFModel(LLM):
             self.model = minference_patch(self.model)
 
         # For SnapKV
-        if "snapkv" in kwargs and kwargs["snapkv"]:
+        elif "snapkv" in kwargs and kwargs["snapkv"]:
             logger.info("Applying SnapKV patch")
             minference_patch = MInference(
                 attn_type="dense",  # SnapKV is a KV cache compression method
@@ -915,7 +915,7 @@ class HFModel(LLM):
             self.model = minference_patch(self.model)
 
         # For PyramidKV
-        if "pyramidkv" in kwargs and kwargs["pyramidkv"]:
+        elif "pyramidkv" in kwargs and kwargs["pyramidkv"]:
             logger.info("Applying PyramidKV patch")
             minference_patch = MInference(
                 attn_type="dense",  # PyramidKV is a KV cache compression method
@@ -925,7 +925,7 @@ class HFModel(LLM):
             self.model = minference_patch(self.model)
 
         # For KIVI
-        if "kivi" in kwargs and kwargs["kivi"]:
+        elif "kivi" in kwargs and kwargs["kivi"]:
             logger.info("Applying KIVI patch")
             minference_patch = MInference(
                 attn_type="dense",  # KIVI is a KV cache compression method
@@ -1167,6 +1167,19 @@ def load_LLM(args):
             kwargs["rope_theta"] = args.rope_theta
         if args.quantize is not None:
             kwargs["quantize"] = args.quantize
+        # Add efficient inference method flags
+        if args.minference:
+            kwargs["minference"] = True
+        elif args.streamingllm:
+            kwargs["streamingllm"] = True
+        elif args.quest:
+            kwargs["quest"] = True
+        elif args.snapkv:
+            kwargs["snapkv"] = True
+        elif args.pyramidkv:
+            kwargs["pyramidkv"] = True
+        elif args.kivi:
+            kwargs["kivi"] = True
 
     logger.info(f"Loading model {args.model_name_or_path} with {model_cls.__name__}")
     model = model_cls(
