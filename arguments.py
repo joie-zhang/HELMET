@@ -52,7 +52,7 @@ def parse_arguments():
     parser.add_argument("--rope_theta", type=int, default=None, help="override rope theta")
     parser.add_argument("--quantize", type=int, default=16, help="4, 8, or 16 bit quantization")
     
-    # Create a mutually exclusive group for the different efficient inference methods
+    # Create a mutually exclusive sgroup for the different efficient inference methods
     method_group = parser.add_mutually_exclusive_group()
     method_group.add_argument("--minference", action="store_true", help="use MInference")
     method_group.add_argument("--streamingllm", action="store_true", help="use StreamingLLM")

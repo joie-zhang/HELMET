@@ -1,11 +1,12 @@
 #!/bin/bash
 
 # Verify required variables are set
-if [ -z "$BASE_CONFIGS" ] || [ -z "$CONTEXT_LENGTHS" ] || [ -z "$MODELS" ] || [ -z "$EXP_TYPE" ] || [ -z "$BENCHMARK" ] || [ -z "$SEED" ]; then
+if [ -z "$BASE_CONFIGS" ] || [ -z "$CONTEXT_LENGTHS" ] || [ -z "$MODELS" ] || [ -z "$QUANTIZE" ] || [ -z "$EXP_TYPE" ] || [ -z "$BENCHMARK" ] || [ -z "$SEED" ]; then
     echo "Error: Required variables are not set"
     echo "BASE_CONFIGS: ${BASE_CONFIGS[@]}"
     echo "CONTEXT_LENGTHS: ${CONTEXT_LENGTHS[@]}"
     echo "MODELS: ${MODELS[@]}"
+    echo "QUANTIZE: ${QUANTIZE[@]}"
     echo "EXP_TYPE: $EXP_TYPE"
     echo "BENCHMARK: $BENCHMARK"
     echo "SEED: $SEED"
@@ -16,10 +17,37 @@ fi
 IFS='|||' read -ra BASE_CONFIGS <<< "$BASE_CONFIGS"
 IFS='|||' read -ra CONTEXT_LENGTHS <<< "$CONTEXT_LENGTHS"
 IFS='|||' read -ra MODELS <<< "$MODELS"
+IFS='|||' read -ra QUANTIZE <<< "$QUANTIZE"
 
 # Debug print the arrays after conversion
 echo "Debug: BASE_CONFIGS after split = ${BASE_CONFIGS[@]}"
 echo "Debug: CONTEXT_LENGTHS after split = ${CONTEXT_LENGTHS[@]}"
+echo "Debug: MODELS after split = ${MODELS[@]}"
+echo "Debug: QUANTIZE after split = ${QUANTIZE[@]}"
+
+# Validate quantization settings
+if [ "${EXP_TYPE}" != "baseline" ] && [ "${#QUANTIZE[@]}" -gt 1 ]; then
+    echo "ERROR: Non-baseline experiment type '${EXP_TYPE}' cannot use quantization options" >&2
+    echo "SLURM_JOB_ID: $SLURM_JOB_ID" >&2
+    echo "SLURM_ARRAY_TASK_ID: $SLURM_ARRAY_TASK_ID" >&2
+    echo "Experiment type: ${EXP_TYPE}" >&2
+    echo "Quantization options provided: ${QUANTIZE[@]}" >&2
+    exit 1
+fi
+
+# Validate quantization values for baseline experiments
+if [ "${EXP_TYPE}" = "baseline" ]; then
+    for quant in "${QUANTIZE[@]}"; do
+        if [[ ! " 4 8 16 " =~ " $quant " ]]; then
+            echo "ERROR: Invalid quantization value '$quant' for baseline experiment" >&2
+            echo "SLURM_JOB_ID: $SLURM_JOB_ID" >&2
+            echo "SLURM_ARRAY_TASK_ID: $SLURM_ARRAY_TASK_ID" >&2
+            echo "Allowed values are: 4, 8, 16" >&2
+            echo "Provided values: ${QUANTIZE[@]}" >&2
+            exit 1
+        fi
+    done
+fi
 
 ##############################
 #       Job blueprint        #
@@ -42,11 +70,41 @@ module load anaconda3/2023.3
 module load gcc/11
 source /scratch/gpfs/DANQIC/jz4391/MInference/minenv/bin/activate
 
-# Get specific model for this run (if running as array job)
-MNAME="${MODELS[$SLURM_ARRAY_TASK_ID % ${#MODELS[@]}]}"
+# Calculate indices for the different parameters
+num_configs=${#BASE_CONFIGS[@]}
+num_contexts=${#CONTEXT_LENGTHS[@]}
+num_models=${#MODELS[@]}
+if [ "${EXP_TYPE}" = "baseline" ]; then
+    num_quant=${#QUANTIZE[@]}
+else
+    num_quant=1
+fi
+
+model_idx=$(( SLURM_ARRAY_TASK_ID / (num_configs * num_contexts * num_quant) ))
+quant_idx=$(( (SLURM_ARRAY_TASK_ID / (num_configs * num_contexts)) % num_quant ))
+context_idx=$(( (SLURM_ARRAY_TASK_ID / num_configs) % num_contexts ))
+config_idx=$(( SLURM_ARRAY_TASK_ID % num_configs ))
+
+# Validate quant_idx for non-baseline experiments
+if [ "${EXP_TYPE}" != "baseline" ] && [ "$quant_idx" -ne 0 ]; then
+    echo "ERROR: Invalid array task ID calculation for non-baseline experiment" >&2
+    echo "SLURM_JOB_ID: $SLURM_JOB_ID" >&2
+    echo "SLURM_ARRAY_TASK_ID: $SLURM_ARRAY_TASK_ID" >&2
+    echo "quant_idx should be 0 for non-baseline experiments, but got: $quant_idx" >&2
+    exit 1
+fi
+
+# Get specific parameters for this run
+MNAME="${MODELS[$model_idx]}"
 MNAME="${MNAME## }"    # Remove leading spaces
 MNAME="${MNAME%% }"    # Remove trailing spaces
 MODEL_NAME="/scratch/gpfs/DANQIC/models/$MNAME"
+
+# # Get specific model for this run (if running as array job)
+# MNAME="${MODELS[$SLURM_ARRAY_TASK_ID % ${#MODELS[@]}]}"
+# MNAME="${MNAME## }"    # Remove leading spaces
+# MNAME="${MNAME%% }"    # Remove trailing spaces
+# MODEL_NAME="/scratch/gpfs/DANQIC/models/$MNAME"
 
 # Create flattened array of all configs
 declare -a ALL_CONFIGS=()
@@ -63,9 +121,19 @@ CONFIG="${ALL_CONFIGS[$SLURM_ARRAY_TASK_ID]}"
 CONTEXT_LEN=$(echo $CONFIG | grep -o '[0-9]\+k')
 CONTEXT_LEN="${CONTEXT_LEN## }"    # Remove leading spaces
 CONTEXT_LEN="${CONTEXT_LEN%% }"    # Remove trailing spaces
-TAG="${EXP_TYPE}_${CONTEXT_LEN}_${MNAME}_${SLURM_JOB_ID}"
 
-OUTPUT_DIR="/scratch/gpfs/DANQIC/jz4391/HELMET/output/$EXP_TYPE/$CONTEXT_LEN/$MNAME"
+if [ "${EXP_TYPE}" = "baseline" ]; then
+    QUANT_BITS="${QUANTIZE[$quant_idx]}"
+    QUANTIZE_PARAM="--quantize ${QUANT_BITS}"
+    TAG="${EXP_TYPE}_${CONTEXT_LEN}_${MNAME}_${QUANT_BITS}bit_${SLURM_JOB_ID}"
+    OUTPUT_DIR="/scratch/gpfs/DANQIC/jz4391/HELMET/output/$EXP_TYPE/$CONTEXT_LEN/$MNAME/${QUANT_BITS}bit"
+else
+    QUANT_BITS=""
+    QUANTIZE_PARAM=""
+    TAG="${EXP_TYPE}_${CONTEXT_LEN}_${MNAME}_${SLURM_JOB_ID}"
+    OUTPUT_DIR="/scratch/gpfs/DANQIC/jz4391/HELMET/output/$EXP_TYPE/$CONTEXT_LEN/$MNAME"
+fi
+
 if [ ! -d "$OUTPUT_DIR" ]; then
     mkdir -p "$OUTPUT_DIR"
 fi
@@ -87,6 +155,7 @@ echo "Options              = $OPTIONS"
 
 # Set experiment-specific parameter based on EXP_TYPE
 EXP_TYPE_PARAM=""
+QUANTIZE_PARAM="${QUANT_BITS}"
 case $EXP_TYPE in
     "streamingllm")
         EXP_TYPE_PARAM="--streamingllm"
@@ -130,6 +199,7 @@ python /scratch/gpfs/DANQIC/jz4391/HELMET/eval.py \
     --output_dir $OUTPUT_DIR \
     --tag "$TAG" \
     --model_name_or_path $MODEL_NAME \
+    $QUANTIZE_PARAM \
     $EXP_TYPE_PARAM \
     $OPTIONS
 
