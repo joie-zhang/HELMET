@@ -1,6 +1,6 @@
 input_max_length: 32768
 datasets: kilt_nq
-generation_max_length: 20
+generation_max_length: 128
 test_files: data/kilt/nq-dev-multikilt_1000_k220_dep6.jsonl
 demo_files: data/kilt/nq-train-multikilt_1000_k3_dep6.jsonl
 use_chat_template: false
