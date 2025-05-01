@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Verify required variables are set
-if [ -z "$BASE_CONFIGS" ] || [ -z "$CONTEXT_LENGTHS" ] || [ -z "$MODELS" ] || [ -z "$QUANTIZE" ] || [ -z "$EXP_TYPE" ] || [ -z "$BENCHMARK" ] || [ -z "$SEED" ]; then
+if [ -z "$BASE_CONFIGS" ] || [ -z "$CONTEXT_LENGTHS" ] || [ -z "$MODELS" ] || [ -z "$EXP_TYPE" ] || [ -z "$BENCHMARK" ] || [ -z "$SEED" ]; then
     echo "Error: Required variables are not set"
     echo "BASE_CONFIGS: ${BASE_CONFIGS[@]}"
     echo "CONTEXT_LENGTHS: ${CONTEXT_LENGTHS[@]}"
@@ -155,7 +155,6 @@ echo "Options              = $OPTIONS"
 
 # Set experiment-specific parameter based on EXP_TYPE
 EXP_TYPE_PARAM=""
-QUANTIZE_PARAM="${QUANT_BITS}"
 case $EXP_TYPE in
     "streamingllm")
         EXP_TYPE_PARAM="--streamingllm"
