@@ -27,7 +27,7 @@ def parse_args():
 def get_model_path(model_name, context_length):
     base_path = "/scratch/gpfs/DANQIC/jz4391/HELMET"
     if model_name == 'streamingllm':
-        return f"{base_path}/output_v2_still_buggy/streamingllm/{context_length}/Llama-3.1-8B-Instruct/html_to_tsv_{context_length}_16bit_eval_data_in128000_size50_shots0_sampFalsemax1024min0t0.0p1.0_chatTrue_42.json"
+        return f"{base_path}/output/streamingllm/{context_length}/Llama-3.1-8B-Instruct/html_to_tsv_{context_length}_16bit_eval_data_in128000_size50_shots0_sampFalsemax1024min0t0.0p1.0_chatTrue_42.json"
     elif model_name == 'pyramidkv':
         # PyramidKV uses 5k instead of 0.5k
         context_dir = '5k' if context_length == '0.5k' else context_length
