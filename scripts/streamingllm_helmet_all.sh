@@ -2,15 +2,14 @@
 ##############################
 #       Job blueprint        #
 ##############################
-#SBATCH --job-name=streamingllm_helmet_32k_gpushare
-#SBATCH --array=0-7
+#SBATCH --job-name=baseline_helmet_16k_eval_metric_testing
 #SBATCH --output=./joblog/%x-%A_%a.out
 #SBATCH --error=./joblog/%x-%A_%a.err
 #SBATCH -N 1
 #SBATCH -n 1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=50G
-#SBATCH --time=1:01:00
+#SBATCH --time=1:00:00
 #SBATCH --gres=gpu:1 --ntasks-per-node=1 -N 1
 #SBATCH --constraint=gpu80
 #SBATCH --mail-type=ALL
@@ -37,34 +36,16 @@ SEED=42
 S_MODELS=("Llama-3.1-8B-Instruct")
 # S_MODELS=("Llama-3.1-8B-Instruct" "Qwen2.5-7B-Instruct")
 QUANTIZE_VALUES=(16)
-CONTEXT_LENGTHS=("16k" "32k")
-
-# Total combinations: models * quantize * context lengths
-TOTAL_MODELS=${#S_MODELS[@]}
-TOTAL_QUANTIZE=${#QUANTIZE_VALUES[@]}
-TOTAL_CONTEXT=${#CONTEXT_LENGTHS[@]}
-TOTAL_COMBINATIONS=$((TOTAL_MODELS * TOTAL_QUANTIZE * TOTAL_CONTEXT))
-
-# Map SLURM_ARRAY_TASK_ID to specific combination
-IDX=$SLURM_ARRAY_TASK_ID
-
-MODEL_IDX=$((IDX / (TOTAL_QUANTIZE * TOTAL_CONTEXT)))
-REMAINDER=$((IDX % (TOTAL_QUANTIZE * TOTAL_CONTEXT)))
-QUANTIZE_IDX=$((REMAINDER / TOTAL_CONTEXT))
-CONTEXT_IDX=$((REMAINDER % TOTAL_CONTEXT))
+CONTEXT_LENGTHS=("16k")
 
 # Get specific values for this task
-MNAME="${S_MODELS[$MODEL_IDX]}"
-QUANTIZE="${QUANTIZE_VALUES[$QUANTIZE_IDX]}"
-CONTEXT_LEN="${CONTEXT_LENGTHS[$CONTEXT_IDX]}"
+MNAME="Llama-3.1-8B-Instruct"
+QUANTIZE="16"
+CONTEXT_LEN="16k"
 
-# Derived variables
-# CONFIGS=("cite_${CONTEXT_LEN}.yaml")
-# CONFIGS=("rerank_${CONTEXT_LEN}.yaml")
-# CONFIGS=("recall_jsonkv_${CONTEXT_LEN}.yaml")
-# CONFIGS=("rag_${CONTEXT_LEN}.yaml")
-CONFIGS=("cite_${CONTEXT_LEN}.yaml" "rerank_${CONTEXT_LEN}.yaml" "recall_jsonkv_${CONTEXT_LEN}.yaml" "rag_${CONTEXT_LEN}.yaml")
-OUTPUT_DIR="/scratch/gpfs/DANQIC/jz4391/HELMET/output/streamingllm/$CONTEXT_LEN/$MNAME"
+CONFIGS=("recall_jsonkv_${CONTEXT_LEN}.yaml")
+# CONFIGS=("cite_${CONTEXT_LEN}.yaml" "rerank_${CONTEXT_LEN}.yaml" "recall_jsonkv_${CONTEXT_LEN}.yaml" "rag_${CONTEXT_LEN}.yaml")
+OUTPUT_DIR="/scratch/gpfs/DANQIC/jz4391/HELMET/output/metric_testing/baseline/$CONTEXT_LEN/$MNAME"
 MODEL_NAME="/scratch/gpfs/DANQIC/models/$MNAME"
 
 # Create output directory
@@ -93,7 +74,7 @@ for CONFIG in "${CONFIGS[@]}"; do
         --output_dir $OUTPUT_DIR \
         --tag v1 \
         --model_name_or_path $MODEL_NAME \
-        --streamingllm \
+        --quantize $QUANTIZE \
         $OPTIONS
 done
 
