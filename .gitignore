@@ -10,6 +10,7 @@ output_v1_uniform/
 joblog_v1_uniform/
 output_v2_still_buggy/
 joblog_v2_still_buggy/
+spoctmp
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
