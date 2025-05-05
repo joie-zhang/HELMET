@@ -64,16 +64,134 @@ def run_test(args, model, dataset, test_file, demo_file):
         all_inputs.append(inputs)
         all_input_texts.append(input_text)
     
-    logger.info("Running generation...")
-    start_time = time.time()
-    # generate all outputs
-    if isinstance(model, OpenAIModel) or isinstance(model, AnthropicModel):
+    ### JZ: MODIFIED HELMET `run_test` FOR ENHANCED METRICS ###
+    # Initialize metrics storage
+    stage_metrics = {
+        'prefill': {'memory': None, 'start_time': None, 'end_time': None},
+        'decode': {'memory': None, 'start_time': None, 'end_time': None}
+    }
+    start_time = end_time = None
+    all_outputs = None
+
+    def get_per_device_memory():
+        return {i: torch.cuda.max_memory_allocated(i) / 1e9 
+                for i in range(torch.cuda.device_count())}
+
+    def safe_cuda_reset():
+        try:
+            torch.cuda.empty_cache()
+            torch.cuda.reset_peak_memory_stats()
+            torch.cuda.synchronize()
+        except Exception as e:
+            logger.warning(f"CUDA reset failed: {e}")
+
+    # Check CUDA availability
+    if not torch.cuda.is_available() and not isinstance(model, (OpenAIModel, AnthropicModel)):
+        logger.warning("CUDA not available - performance metrics will be limited")
+        return metrics
+
+    # Record input characteristics
+    performance_metrics = {
+        'batch_size': len(all_inputs),
+        'avg_input_length': np.mean([len(input.get('input_ids', [])) for input in all_inputs])
+    }
+
+    if not isinstance(model, (OpenAIModel, AnthropicModel)):
+        safe_cuda_reset()
+        logger.info("Running prefill...")
+        stage_metrics['prefill']['start_time'] = time.time()
+
+        try:
+            prefill_outputs = model.prefill_only(all_inputs) if hasattr(model, 'prefill_only') else None
+            
+            # Add validation and metrics for prefill stage
+            if prefill_outputs is not None:
+                logger.info("Prefill stage completed successfully")
+                if isinstance(prefill_outputs, dict) and 'prefill_token_count' in prefill_outputs:
+                    performance_metrics['prefill_token_count'] = prefill_outputs['prefill_token_count']
+                    logger.info(f"Prefill processed {prefill_outputs['prefill_token_count']} tokens")
+            else:
+                logger.info("Model does not support separate prefill measurement")
+
+            torch.cuda.synchronize()
+            stage_metrics['prefill']['end_time'] = time.time()
+            stage_metrics['prefill']['memory'] = sum([
+                torch.cuda.max_memory_allocated(i) for i in range(torch.cuda.device_count())
+            ]) / 1e9
+            stage_metrics['prefill']['per_device_memory'] = get_per_device_memory()
+
+            safe_cuda_reset()
+            logger.info("Running decoding...")
+            stage_metrics['decode']['start_time'] = time.time()
+
+            all_outputs = model.generate_batch(all_inputs)
+
+            torch.cuda.synchronize()
+            stage_metrics['decode']['end_time'] = time.time()
+            stage_metrics['decode']['memory'] = sum([
+                torch.cuda.max_memory_allocated(i) for i in range(torch.cuda.device_count())
+            ]) / 1e9
+            stage_metrics['decode']['per_device_memory'] = get_per_device_memory()
+
+        except Exception as e:
+            logger.warning(f"Failed to measure separate stages: {e}", exc_info=True)
+            safe_cuda_reset()
+            start_time = time.time()
+            all_outputs = model.generate_batch(all_inputs)
+            torch.cuda.synchronize()
+            end_time = time.time()
+    else:
         # using the batch API makes it cheaper and faster
         logger.info(f"Using the OpenAI/Anthropic batch API by default, if you want to use the iterative API, please change the code")
+        start_time = time.time()
+        logger.info("Running prefill and generation...")
         all_outputs = model.generate_batch(all_inputs, batch_file=output_path+".batch")
-    else:
-        all_outputs = model.generate_batch(all_inputs)
-    end_time = time.time()
+        torch.cuda.synchronize()
+        end_time = time.time()
+
+    # Check for generation failure
+    if all_outputs is None or len(all_outputs) == 0:
+        logger.error("Generation failed - no outputs produced")
+        return output_path
+
+    # Compute total tokens and timing metrics
+    total_tokens = sum(output.get('output_len', 0) for output in (all_outputs or []))
+    total_time = (
+        (stage_metrics['decode']['end_time'] - stage_metrics['prefill']['start_time'])
+        if all(stage_metrics[stage]['end_time'] is not None for stage in ['prefill', 'decode'])
+        else (end_time - start_time)
+    )
+
+    # Ensure we have valid timing data
+    if total_time is None or total_time <= 0:
+        logger.error("Invalid timing data collected")
+        return output_path
+
+    # Update performance metrics
+    performance_metrics.update({
+        'total_memory_gb': (stage_metrics['prefill']['memory'] or 0) + (stage_metrics['decode']['memory'] or 0),
+        'total_throughput': len(all_outputs) / total_time,
+        'tokens_per_second': total_tokens / total_time,
+        'total_time': total_time
+    })
+
+    if all(stage_metrics[stage]['memory'] is not None for stage in ['prefill', 'decode']):
+        performance_metrics.update({
+            'prefill_memory_gb': stage_metrics['prefill']['memory'],
+            'decode_memory_gb': stage_metrics['decode']['memory'],
+            'prefill_time': stage_metrics['prefill']['end_time'] - stage_metrics['prefill']['start_time'],
+            'decode_time': stage_metrics['decode']['end_time'] - stage_metrics['decode']['start_time'],
+            'prefill_per_device_memory': stage_metrics['prefill']['per_device_memory'],
+            'decode_per_device_memory': stage_metrics['decode']['per_device_memory']
+        })
+
+    # Add metrics to HELMET's metrics collection and log
+    for name, value in performance_metrics.items():
+        metrics[name].append(value)
+        if isinstance(value, dict):
+            logger.info(f"{name}: {json.dumps(value, indent=2)}")
+        else:
+            logger.info(f"{name}: {value:.2f}")
 
     # then we do all the postprocessing + evaluation
     results = []
