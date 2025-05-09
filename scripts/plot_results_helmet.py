@@ -98,7 +98,7 @@ for i, perf_task in tqdm(enumerate(perf_tasks), desc='Processing tasks', total=l
             ax.set_xlabel(x_label, fontsize=8)
         # only title the top row with the column header
         if i == 0:
-            col_title = (f"Memory {context}" if j < 2 else f"Throughput {context}")
+            col_title = (f"Memory {context.replace('k', 'K')}" if j < 2 else f"Throughput {context.replace('k', 'K')}")
             ax.set_title(col_title, fontsize=10)
 
 # 6) Build a shared legend to the right
