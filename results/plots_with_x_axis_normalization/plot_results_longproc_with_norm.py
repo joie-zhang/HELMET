@@ -59,6 +59,41 @@ fig, axes = plt.subplots(
     figsize=(20, 12),
 )
 
+# First pass to find min/max values for each column
+x_ranges = {j: {'min': float('inf'), 'max': float('-inf')} for j in range(4)}
+
+# First pass - calculate ranges
+for i, task in tqdm(enumerate(perf_tasks), desc='Calculating ranges', total=len(perf_tasks)):
+    for j in range(4):
+        if j < 2:
+            df = longproc_memory_df
+            context = contexts[j]
+        else:
+            df = longproc_throughput_df
+            context = contexts[j - 2]
+            
+        subset = df[df['context_length'] == context]
+        for _, row in subset.iterrows():
+            x = row[task]
+            if pd.isna(x):
+                continue
+            perf_row = longproc_performance_df[
+                (longproc_performance_df['technique'] == row['technique']) &
+                (longproc_performance_df['context_length'] == context) &
+                (longproc_performance_df['model'] == row['model'])
+            ]
+            if not perf_row.empty:
+                x_ranges[j]['min'] = min(x_ranges[j]['min'], x)
+                x_ranges[j]['max'] = max(x_ranges[j]['max'], x)
+
+# Add padding to ranges
+for j in range(4):
+    range_width = x_ranges[j]['max'] - x_ranges[j]['min']
+    padding = range_width * 0.05
+    x_ranges[j]['min'] -= padding
+    x_ranges[j]['max'] += padding
+
+# Second pass - actual plotting
 for i, task in tqdm(enumerate(perf_tasks), desc='Processing tasks', total=len(perf_tasks)):
     for j in tqdm(range(4), desc=f'Processing plots for {task}', leave=False):
         ax = axes[i, j]
@@ -91,6 +126,9 @@ for i, task in tqdm(enumerate(perf_tasks), desc='Processing tasks', total=len(pe
                 edgecolor='k',
                 linewidth=0.5,
             )
+        
+        # Set the x-axis limits after all points are plotted
+        ax.set_xlim(x_ranges[j]['min'], x_ranges[j]['max'])
 
         if j == 0:
             ax.set_ylabel(task.replace('_', ' ').title(), fontsize=8)

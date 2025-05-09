@@ -62,6 +62,42 @@ fig, axes = plt.subplots(
     figsize=(20, 30),
 )
 
+# After creating the figure but before the plotting loops, add this code to find ranges:
+x_ranges = {j: {'min': float('inf'), 'max': float('-inf')} for j in range(4)}
+
+# First pass to find min/max values for each column
+for i, perf_task in enumerate(perf_tasks):
+    mem_thr_col = 'cite' if perf_task.startswith('cite_') else perf_task
+    
+    for j in range(4):
+        if j < 2:
+            df = helmet_memory_df
+            context = contexts[j]
+        else:
+            df = helmet_throughput_df
+            context = contexts[j - 2]
+            
+        subset = df[df['context_length'] == context]
+        for _, row in subset.iterrows():
+            x = row[mem_thr_col]
+            if pd.isna(x):
+                continue
+            perf_row = helmet_performance_df[
+                (helmet_performance_df['technique'] == row['technique']) &
+                (helmet_performance_df['context_length'] == context) &
+                (helmet_performance_df['model'] == row['model'])
+            ]
+            if not perf_row.empty:
+                x_ranges[j]['min'] = min(x_ranges[j]['min'], x)
+                x_ranges[j]['max'] = max(x_ranges[j]['max'], x)
+
+# Add some padding to the ranges (e.g., 5% on each side)
+for j in range(4):
+    range_width = x_ranges[j]['max'] - x_ranges[j]['min']
+    padding = range_width * 0.05
+    x_ranges[j]['min'] -= padding
+    x_ranges[j]['max'] += padding
+
 # 5) Populate each subplot
 for i, perf_task in tqdm(enumerate(perf_tasks), desc='Processing tasks', total=len(perf_tasks)):
     # memory/throughput column uses same underlying column 'cite' for all cite_* tasks
@@ -100,6 +136,9 @@ for i, perf_task in tqdm(enumerate(perf_tasks), desc='Processing tasks', total=l
                 edgecolor='k',
                 linewidth=0.5,
             )
+
+            # Set consistent x-axis limits for this column
+            ax.set_xlim(x_ranges[j]['min'], x_ranges[j]['max'])
 
         # only label the leftmost column with the task name
         if j == 0:
