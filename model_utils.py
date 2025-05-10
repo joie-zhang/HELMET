@@ -894,6 +894,15 @@ class HFModel(LLM):
             )
             self.model = minference_patch(self.model)
 
+        elif "streamingllm_original" in kwargs and kwargs["streamingllm_original"]:
+            logger.info("Applying StreamingLLM Original patch")
+            minference_patch = MInference(
+                attn_type="streaming2", 
+                model_name=model_name, 
+                kv_type="streamingllm_original"
+            )
+            self.model = minference_patch(self.model)
+        
         # For Quest
         elif "quest" in kwargs and kwargs["quest"]:
             logger.info("Applying Quest patch")
@@ -1172,6 +1181,8 @@ def load_LLM(args):
             kwargs["minference"] = True
         elif args.streamingllm:
             kwargs["streamingllm"] = True
+        elif args.streamingllm_original:
+            kwargs["streamingllm_original"] = True
         elif args.quest:
             kwargs["quest"] = True
         elif args.snapkv:

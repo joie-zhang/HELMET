@@ -60,6 +60,7 @@ def parse_arguments():
     method_group.add_argument("--snapkv", action="store_true", help="use SnapKV")
     method_group.add_argument("--pyramidkv", action="store_true", help="use PyramidKV")
     method_group.add_argument("--kivi", action="store_true", help="use KIVI")
+    method_group.add_argument("--streamingllm_original", action="store_true", help="use StreamingLLM Original")
 
     # misc
     parser.add_argument("--debug", action="store_true", help="for debugging")
