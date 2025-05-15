@@ -294,9 +294,25 @@ def niah_configs():
         }
     with open(f"configs/niah.yaml", "w") as f:
         yaml.dump(config, f, sort_keys=False)
+
+def niah_16k_32k_configs():
+    input_lengths = [16384, 32768]
+    dataset=["ruler_niah_s_2"]
+    gen_lengths = [50]
+    for _, l in enumerate(input_lengths):
+        config = {
+            "input_max_length": l,
+            "datasets": dataset[0],
+            "generation_max_length": gen_lengths[0],
+            "test_files": f'data/ruler/{dataset[0].replace("ruler_", "").replace("_s_", "_single_")}/validation_{l}.jsonl',
+            "demo_files": "",
+        }
+        with open(f"configs/niah_{'16k' if l == 16384 else '32k'}.yaml", "w") as f:
+            yaml.dump(config, f, sort_keys=False)
     
 
 if __name__ == "__main__":
-    helmet_configs()
-    helmet_configs(input_lengths=["8k", "16k", "32k", "64k"], fname_postfix="_short")
-    niah_configs()
+    # helmet_configs()
+    # helmet_configs(input_lengths=["8k", "16k", "32k", "64k"], fname_postfix="_short")
+    # niah_configs()
+    niah_16k_32k_configs()

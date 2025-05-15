@@ -11,13 +11,15 @@ TASK_MAP = {
     "json_kv": "recall_jsonkv", 
     "kilt_hotpotqa": "rag_hotpotqa",
     "kilt_nq": "rag_nq",
-    "msmarco_rerank": "rerank"
+    "msmarco_rerank": "rerank",
+    "ruler_niah_s_2": "niah"
 }
 TASKS_BY_CONTEXT = {
     "2k": ["html_to_tsv", "pseudo_to_code", "travel_planning"],
     "5k": ["html_to_tsv", "pseudo_to_code"],
-    "16k": ["recall_jsonkv", "rag_nq", "rag_hotpotqa", "rerank", "cite"],
-    "32k": ["recall_jsonkv", "rag_nq", "rag_hotpotqa", "rerank", "cite"]
+    "8k": ["html_to_tsv", "travel_planning"],
+    "16k": ["recall_jsonkv", "rag_nq", "rag_hotpotqa", "rerank", "cite", "niah"],
+    "32k": ["recall_jsonkv", "rag_nq", "rag_hotpotqa", "rerank", "cite", "niah"]
 }
 SCORE_KEYS = {
     "html_to_tsv": ["f1"],
@@ -27,7 +29,8 @@ SCORE_KEYS = {
     "recall_jsonkv": ["substring_exact_match"],
     "rag_nq": ["substring_exact_match"],
     "rag_hotpotqa": ["substring_exact_match"],
-    "rerank": ["NDCG@10"]
+    "rerank": ["NDCG@10"],
+    "niah": ["ruler_recall"],
 }
 
 # Helper function to map file prefix to task
