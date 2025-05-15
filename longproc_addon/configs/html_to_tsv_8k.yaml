@@ -4,7 +4,7 @@ datasets: html_to_tsv_8k
 test_files: longproc_addon/longproc/data
 demo_files: ""
 use_chat_template: true
-max_test_samples: 100
+max_test_samples: 50
 temperature: 0.0
 shots: 0
 stop_new_line: false
