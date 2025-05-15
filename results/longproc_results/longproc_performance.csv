@@ -23,6 +23,10 @@ minference,5k,Qwen2.5-7B-Instruct,52.89492689851127,64.0,
 minference,5k,Llama-3.1-8B-Instruct,46.985078004088734,54.0,
 minference,2k,Qwen2.5-7B-Instruct,34.709050652822,28.000000000000004,34.0
 minference,2k,Llama-3.1-8B-Instruct,23.391598377898276,30.0,36.0
+streamingllm_original,5k,Qwen2.5-7B-Instruct,55.21939326005035,64.0,
+streamingllm_original,5k,Llama-3.1-8B-Instruct,50.19556031052744,54.0,
+streamingllm_original,2k,Qwen2.5-7B-Instruct,33.68229585818331,26.0,40.0
+streamingllm_original,2k,Llama-3.1-8B-Instruct,30.42169313980497,30.0,48.0
 snapkv,5k,Qwen2.5-7B-Instruct,17.524830517992914,64.0,
 snapkv,5k,Llama-3.1-8B-Instruct,20.261446035927058,54.0,
 snapkv,2k,Qwen2.5-7B-Instruct,2.1860406011648923,26.0,28.000000000000004

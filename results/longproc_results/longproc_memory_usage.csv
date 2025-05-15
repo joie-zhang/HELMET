@@ -23,6 +23,10 @@ minference,5k,Qwen2.5-7B-Instruct,33.253476864,15.621519872,
 minference,5k,Llama-3.1-8B-Instruct,41.582657536,16.628681728,
 minference,2k,Qwen2.5-7B-Instruct,35.154383872,16.155173888,16.957698048
 minference,2k,Llama-3.1-8B-Instruct,42.865619456,17.463516672,18.548780032
+streamingllm_original,5k,Qwen2.5-7B-Instruct,28.165382656,15.513746944,
+streamingllm_original,5k,Llama-3.1-8B-Instruct,31.803817984,16.413956096,
+streamingllm_original,2k,Qwen2.5-7B-Instruct,29.53309184,15.895904768,16.473132032
+streamingllm_original,2k,Llama-3.1-8B-Instruct,32.598306304,16.940353024,17.599050752
 snapkv,5k,Qwen2.5-7B-Instruct,31.20102656,16.305336832,
 snapkv,5k,Llama-3.1-8B-Instruct,35.497930752,17.527821824,
 snapkv,2k,Qwen2.5-7B-Instruct,32.715121664,18.09044224,18.567367168
