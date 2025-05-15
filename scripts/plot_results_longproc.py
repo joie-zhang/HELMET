@@ -35,7 +35,8 @@ marker_dict = {
     'minference':   'D',
     'pyramidkv':    'P',
     'snapkv':       'X',
-    'streamingllm': '*'
+    'streamingllm': '*',
+    'streamingllm_original': '8',
 }
 
 # Add marker size dictionary to compensate for visual differences
@@ -46,7 +47,8 @@ marker_size_dict = {
     'D': 100,  # minference
     'P': 120,  # pyramidkv - slightly larger
     'X': 120,  # snapkv - slightly larger
-    '*': 200   # streamingllm - make stars bigger
+    '*': 200,  # streamingllm - make stars bigger
+    '8': 85,   # streamingllm_original - make octagons smaller
 }
 
 # --- Unified 3×4 grid for LongProc Memory/Throughput vs Performance ---
@@ -69,7 +71,14 @@ for i, task in tqdm(enumerate(perf_tasks), desc='Processing tasks', total=len(pe
         else:
             df = longproc_throughput_df
             context = contexts[j - 2]
-            x_label = 'Throughput (samples/s)'
+            # Calculate latency as 1/throughput with zero handling
+            df = df.copy()  # Create a copy to avoid modifying the original
+            for task in perf_tasks:
+                # Replace 0 with NaN to avoid division by zero
+                df[task] = df[task].replace(0, float('nan'))
+                # Convert non-zero throughput to latency
+                df[task] = 1 / df[task]
+            x_label = 'Latency (s/sample)'
 
         subset = df[df['context_length'] == context]
         for _, row in tqdm(subset.iterrows(), desc=f'Processing datapoints for {task} ({context})', leave=False):
@@ -97,7 +106,8 @@ for i, task in tqdm(enumerate(perf_tasks), desc='Processing tasks', total=len(pe
         if i == len(perf_tasks) - 1:
             ax.set_xlabel(x_label, fontsize=8)
         if i == 0:
-            col_title = (f"Memory {context.replace('5k', '0.5K').replace('2k', '2K')}" if j < 2 else f"Throughput {context.replace('5k', '0.5K').replace('2k', '2K')}")
+            col_title = (f"Memory {context.replace('5k', '0.5K').replace('2k', '2K')}" if j < 2 else 
+                        f"Latency {context.replace('5k', '0.5K').replace('2k', '2K')}")
             ax.set_title(col_title, fontsize=10)
 
 # --- shared legend across all subplots, placed at bottom ---

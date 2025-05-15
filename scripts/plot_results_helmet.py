@@ -41,7 +41,8 @@ marker_dict = {
     'minference':   'D',
     'pyramidkv':    'P',
     'snapkv':       'X',
-    'streamingllm': '*'
+    'streamingllm': '*',
+    'streamingllm_original': '8',
 }
 
 # Add marker size dictionary to compensate for visual differences
@@ -52,7 +53,8 @@ marker_size_dict = {
     'D': 100,  # minference
     'P': 120,  # pyramidkv - slightly larger
     'X': 120,  # snapkv - slightly larger
-    '*': 200   # streamingllm - make stars bigger
+    '*': 200,  # streamingllm - make stars bigger
+    '8': 85,  # streamingllm_original - make octagons smaller
 }
 
 # 4) Create a 7×4 grid
@@ -76,7 +78,14 @@ for i, perf_task in tqdm(enumerate(perf_tasks), desc='Processing tasks', total=l
         else:
             df      = helmet_throughput_df
             context = contexts[j - 2]
-            x_label = 'Throughput (samples/s)'
+            # Calculate latency as 1/throughput with zero handling
+            df = df.copy()  # Create a copy to avoid modifying the original
+            for task in ['recall_jsonkv', 'rag_nq', 'rag_hotpotqa', 'rerank', 'cite']:
+                # Replace 0 with NaN to avoid division by zero
+                df[task] = df[task].replace(0, float('nan'))
+                # Convert non-zero throughput to latency
+                df[task] = 1 / df[task]
+            x_label = 'Latency (s/sample)'
 
         # plot one dot per (technique, model)
         subset = df[df['context_length'] == context]
@@ -109,7 +118,8 @@ for i, perf_task in tqdm(enumerate(perf_tasks), desc='Processing tasks', total=l
             ax.set_xlabel(x_label, fontsize=8)
         # only title the top row with the column header
         if i == 0:
-            col_title = (f"Memory {context.replace('k', 'K')}" if j < 2 else f"Throughput {context.replace('k', 'K')}")
+            col_title = (f"Memory {context.replace('k', 'K')}" if j < 2 else 
+                        f"Latency {context.replace('k', 'K')}")
             ax.set_title(col_title, fontsize=10)
 
 # 6) Build a shared legend to the right
