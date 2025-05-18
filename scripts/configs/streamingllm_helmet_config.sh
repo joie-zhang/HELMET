@@ -2,13 +2,17 @@
 # declare -a BASE_CONFIGS=("cite" "rerank" "recall_jsonkv" "rag_nq" "rag_hotpotqa" "niah")
 declare -a BASE_CONFIGS=("niah")
 declare -a CONTEXT_LENGTHS=("16k" "32k")
-# declare -a MODELS=("Llama-3.1-8B-Instruct")
-declare -a MODELS=("Qwen2.5-7B-Instruct")
+declare -a MODELS=("Llama-3.1-8B-Instruct")
+# declare -a MODELS=("Qwen2.5-7B-Instruct")
 # declare -a QUANTIZE=(16)  # Add quantization options
 declare -a QUANTIZE=("")  # non-baseline experiments should not support quantize
-EXP_TYPE="streamingllm_original"
+EXP_TYPE="streamingllm"
 BENCHMARK="helmet"
 SEED=42
+
+# StreamingLLM Configuration Parameters
+N_LOCAL=4092                # Number of local tokens
+N_INIT=4                  # Number of initial tokens
 
 # # streamingllm_longproc_config.sh
 # # declare -a BASE_CONFIGS=("html_to_tsv" "pseudo_to_code")
@@ -37,3 +41,5 @@ export QUANTIZE
 export EXP_TYPE
 export BENCHMARK
 export SEED
+export N_LOCAL
+export N_INIT
