@@ -877,69 +877,37 @@ class HFModel(LLM):
             )
         
         # Add this block after model loading but before torch.compile:
-        if "minference" in kwargs and kwargs["minference"]:
-            logger.info("Applying MInference patch")
+        if any(method in kwargs for method in ["minference", "streamingllm", "streamingllm_original", "quest", "snapkv", "pyramidkv", "kivi"]):
+            # Set up common pattern for all MInference methods
+            attn_type = "minference"
+            kv_type = kwargs.get("kv_type", "dense")
+            attn_kwargs = kwargs.get("attn_kwargs", {})
+            
+            if kwargs.get("streamingllm"):
+                attn_type = "a_shape"
+                kv_type = "streamingllm"
+            elif kwargs.get("streamingllm_original"):
+                attn_type = "a_shape" 
+                kv_type = "streamingllm_original"
+            elif kwargs.get("quest"):
+                attn_type = "dense"
+                kv_type = "quest"
+            elif kwargs.get("snapkv"):
+                attn_type = "dense"
+                kv_type = "snapkv"
+            elif kwargs.get("pyramidkv"):
+                attn_type = "dense"
+                kv_type = "pyramidkv"
+            elif kwargs.get("kivi"):
+                attn_type = "dense"
+                kv_type = "kivi"
+            
+            logger.info(f"Applying {kv_type} patch with attn_type={attn_type}")
             minference_patch = MInference(
-                attn_type="minference", 
-                model_name=model_name
-            )
-            self.model = minference_patch(self.model)
-    
-        elif "streamingllm" in kwargs and kwargs["streamingllm"]:
-            logger.info("Applying StreamingLLM patch")
-            minference_patch = MInference(
-                attn_type="a_shape", 
-                model_name=model_name, 
-                kv_type="streamingllm"
-            )
-            self.model = minference_patch(self.model)
-
-        elif "streamingllm_original" in kwargs and kwargs["streamingllm_original"]:
-            logger.info("Applying StreamingLLM Original patch")
-            minference_patch = MInference(
-                attn_type="streaming2", 
-                model_name=model_name, 
-                kv_type="streamingllm_original"
-            )
-            self.model = minference_patch(self.model)
-        
-        # For Quest
-        elif "quest" in kwargs and kwargs["quest"]:
-            logger.info("Applying Quest patch")
-            minference_patch = MInference(
-                attn_type="dense",  # Quest modifies KV cache, uses dense attention
+                attn_type=attn_type,
                 model_name=model_name,
-                kv_type="quest"
-            )
-            self.model = minference_patch(self.model)
-
-        # For SnapKV
-        elif "snapkv" in kwargs and kwargs["snapkv"]:
-            logger.info("Applying SnapKV patch")
-            minference_patch = MInference(
-                attn_type="dense",  # SnapKV is a KV cache compression method
-                model_name=model_name,
-                kv_type="snapkv"
-            )
-            self.model = minference_patch(self.model)
-
-        # For PyramidKV
-        elif "pyramidkv" in kwargs and kwargs["pyramidkv"]:
-            logger.info("Applying PyramidKV patch")
-            minference_patch = MInference(
-                attn_type="dense",  # PyramidKV is a KV cache compression method
-                model_name=model_name,
-                kv_type="pyramidkv"
-            )
-            self.model = minference_patch(self.model)
-
-        # For KIVI
-        elif "kivi" in kwargs and kwargs["kivi"]:
-            logger.info("Applying KIVI patch")
-            minference_patch = MInference(
-                attn_type="dense",  # KIVI is a KV cache compression method
-                model_name=model_name,
-                kv_type="kivi"
+                kv_type=kv_type,
+                attn_kwargs=attn_kwargs
             )
             self.model = minference_patch(self.model)
 
@@ -1177,20 +1145,48 @@ def load_LLM(args):
         if args.quantize is not None:
             kwargs["quantize"] = args.quantize
         # Add efficient inference method flags
-        if args.minference:
-            kwargs["minference"] = True
-        elif args.streamingllm:
-            kwargs["streamingllm"] = True
-        elif args.streamingllm_original:
-            kwargs["streamingllm_original"] = True
-        elif args.quest:
-            kwargs["quest"] = True
-        elif args.snapkv:
-            kwargs["snapkv"] = True
-        elif args.pyramidkv:
-            kwargs["pyramidkv"] = True
-        elif args.kivi:
-            kwargs["kivi"] = True
+        if any(method in ["minference", "snapkv", "pyramidkv", "quest", "kivi", "streamingllm", "streamingllm_original"] 
+              for method in dir(args) if getattr(args, method, False)):
+            # Common KV cache configuration parameters for methods that use them
+            if args.minference:
+                kwargs["minference"] = True
+                kwargs["kv_type"] = args.kv_type
+            elif args.snapkv:
+                kwargs["snapkv"] = True
+                kwargs["kv_type"] = "snapkv"
+            elif args.pyramidkv:
+                kwargs["pyramidkv"] = True
+                kwargs["kv_type"] = "pyramidkv"
+            elif args.quest:
+                kwargs["quest"] = True
+                kwargs["kv_type"] = "quest"
+            elif args.kivi:
+                kwargs["kivi"] = True
+                kwargs["kv_type"] = "kivi"
+            elif args.streamingllm:
+                kwargs["streamingllm"] = True
+                kwargs["kv_type"] = "streamingllm"
+            elif args.streamingllm_original:
+                kwargs["streamingllm_original"] = True
+                kwargs["kv_type"] = "streamingllm_original"
+            
+            # Add common attn_kwargs for methods that need KV params
+            if kwargs.get("kv_type") in ["snapkv", "pyramidkv"]:
+                kwargs["attn_kwargs"] = {
+                    "window_size": args.window_size,
+                    "max_capacity_prompt": args.max_capacity_prompt,
+                    "kernel_size": args.kernel_size,
+                    "pooling": args.pooling
+                }
+            elif kwargs.get("kv_type") in ["streamingllm", "streamingllm_original"]:
+                kwargs["attn_kwargs"] = {
+                    "n_local": args.n_local,
+                    "n_init": args.n_init
+                }
+                kwargs["streaming_kwargs"] = {
+                    "n_local": args.n_local,
+                    "n_init": args.n_init
+                }
 
     logger.info(f"Loading model {args.model_name_or_path} with {model_cls.__name__}")
     model = model_cls(
