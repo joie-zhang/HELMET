@@ -94,17 +94,13 @@ if [ "${EXP_TYPE}" != "baseline" ] && [ "$quant_idx" -ne 0 ]; then
     exit 1
 fi
 
-# Get specific parameters for this run
-MNAME="${MODELS[$model_idx]}"
+# Get specific parameters for this run (if only running one model at a time)
+# MNAME="${MODELS[$model_idx]}"
+# Get specific model for this run (if running as array job)
+MNAME="${MODELS[$SLURM_ARRAY_TASK_ID % ${#MODELS[@]}]}"
 MNAME="${MNAME## }"    # Remove leading spaces
 MNAME="${MNAME%% }"    # Remove trailing spaces
 MODEL_NAME="/scratch/gpfs/DANQIC/models/$MNAME"
-
-# # Get specific model for this run (if running as array job)
-# MNAME="${MODELS[$SLURM_ARRAY_TASK_ID % ${#MODELS[@]}]}"
-# MNAME="${MNAME## }"    # Remove leading spaces
-# MNAME="${MNAME%% }"    # Remove trailing spaces
-# MODEL_NAME="/scratch/gpfs/DANQIC/models/$MNAME"
 
 # Create flattened array of all configs
 declare -a ALL_CONFIGS=()
