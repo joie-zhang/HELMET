@@ -61,6 +61,27 @@ def parse_arguments():
     method_group.add_argument("--pyramidkv", action="store_true", help="use PyramidKV")
     method_group.add_argument("--kivi", action="store_true", help="use KIVI")
     method_group.add_argument("--streamingllm_original", action="store_true", help="use StreamingLLM Original")
+    
+    # Add KV cache configuration parameters
+    kv_group = parser.add_argument_group('KV Cache Configuration')
+    kv_group.add_argument("--kv_type", type=str, default="dense", 
+                        help="KV cache type (dense, snapkv, pyramidkv, etc.)")
+    
+    # Parameters for snapkv and pyramidkv methods
+    kv_group.add_argument("--window_size", type=int, default=32,
+                        help="Window size for KV cache methods (snapkv, pyramidkv)")
+    kv_group.add_argument("--max_capacity_prompt", type=int, default=4096,
+                        help="Maximum capacity for prompt in KV cache (snapkv, pyramidkv)")
+    kv_group.add_argument("--kernel_size", type=int, default=5,
+                        help="Kernel size for attention pooling (snapkv, pyramidkv)")
+    kv_group.add_argument("--pooling", type=str, default="maxpool", choices=["maxpool", "avgpool"],
+                        help="Pooling method for attention (snapkv, pyramidkv)")
+    
+    # Parameters specific to streamingllm methods
+    kv_group.add_argument("--n_local", type=int, default=4092,
+                        help="Number of local tokens for streamingllm methods")
+    kv_group.add_argument("--n_init", type=int, default=4,
+                        help="Number of initial tokens for streamingllm methods")
 
     # misc
     parser.add_argument("--debug", action="store_true", help="for debugging")
