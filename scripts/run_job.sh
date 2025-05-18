@@ -127,6 +127,20 @@ if [ "${EXP_TYPE}" = "baseline" ]; then
     QUANTIZE_PARAM="--quantize ${QUANT_BITS}"
     TAG="${EXP_TYPE}_${CONTEXT_LEN}_${MNAME}_${QUANT_BITS}bit_${SLURM_JOB_ID}"
     OUTPUT_DIR="/scratch/gpfs/DANQIC/jz4391/HELMET/output/$EXP_TYPE/$CONTEXT_LEN/$MNAME/${QUANT_BITS}bit"
+elif [ "${EXP_TYPE}" = "snapkv" ] || [ "${EXP_TYPE}" = "pyramidkv" ]; then
+    QUANT_BITS=""
+    QUANTIZE_PARAM=""
+    # Include cache parameters in both tag and output directory
+    CACHE_SUFFIX="w${WINDOW_SIZE}_c${MAX_CAPACITY_PROMPT}_k${KERNEL_SIZE}_${POOLING}"
+    TAG="${EXP_TYPE}_${CONTEXT_LEN}_${MNAME}_${CACHE_SUFFIX}_${SLURM_JOB_ID}"
+    OUTPUT_DIR="/scratch/gpfs/DANQIC/jz4391/HELMET/output/$EXP_TYPE/$CONTEXT_LEN/$MNAME/${CACHE_SUFFIX}"
+elif [ "${EXP_TYPE}" = "streamingllm" ] || [ "${EXP_TYPE}" = "streamingllm_original" ]; then
+    QUANT_BITS=""
+    QUANTIZE_PARAM=""
+    # Include streaming parameters in both tag and output directory
+    STREAM_SUFFIX="local${N_LOCAL}_init${N_INIT}"
+    TAG="${EXP_TYPE}_${CONTEXT_LEN}_${MNAME}_${STREAM_SUFFIX}_${SLURM_JOB_ID}"
+    OUTPUT_DIR="/scratch/gpfs/DANQIC/jz4391/HELMET/output/$EXP_TYPE/$CONTEXT_LEN/$MNAME/${STREAM_SUFFIX}"
 else
     QUANT_BITS=""
     QUANTIZE_PARAM=""
@@ -153,30 +167,66 @@ echo "Config file          = $CONFIG"
 echo "Evaluation output dir = $OUTPUT_DIR"
 echo "Options              = $OPTIONS"
 
+# Check for required KV cache parameters if needed
+if [[ "$EXP_TYPE" == "snapkv" || "$EXP_TYPE" == "pyramidkv" ]]; then
+    # if [ -z "$WINDOW_SIZE" ] || [ -z "$MAX_CAPACITY_PROMPT" ] || [ -z "$KERNEL_SIZE" ] || [ -z "$POOLING" ]; then
+    if [ -z "$KV_TYPE" ] || [ -z "$WINDOW_SIZE" ] || [ -z "$MAX_CAPACITY_PROMPT" ] || [ -z "$KERNEL_SIZE" ] || [ -z "$POOLING" ]; then
+        echo "Error: KV cache configuration parameters are not set"
+        echo "KV_TYPE: $KV_TYPE"
+        echo "WINDOW_SIZE: $WINDOW_SIZE"
+        echo "MAX_CAPACITY_PROMPT: $MAX_CAPACITY_PROMPT"
+        echo "KERNEL_SIZE: $KERNEL_SIZE"
+        echo "POOLING: $POOLING"
+        exit 1
+    fi
+elif [[ "$EXP_TYPE" == "streamingllm" || "$EXP_TYPE" == "streamingllm_original" ]]; then
+    if [ -z "$N_LOCAL" ] || [ -z "$N_INIT" ]; then
+        echo "Error: StreamingLLM configuration parameters are not set"
+        echo "N_LOCAL: $N_LOCAL"
+        echo "N_INIT: $N_INIT"
+        exit 1
+    fi
+fi
+
 # Set experiment-specific parameter based on EXP_TYPE
 EXP_TYPE_PARAM=""
+KV_CACHE_PARAMS=""
+
 case $EXP_TYPE in
     "streamingllm")
         EXP_TYPE_PARAM="--streamingllm"
+        KV_CACHE_PARAMS="--n_local $N_LOCAL --n_init $N_INIT"
+        ;;
+    "streamingllm_original")
+        EXP_TYPE_PARAM="--streamingllm_original"
+        KV_CACHE_PARAMS="--n_local $N_LOCAL --n_init $N_INIT"
         ;;
     "minference")
         EXP_TYPE_PARAM="--minference"
         ;;
     "snapkv")
         EXP_TYPE_PARAM="--snapkv"
+        KV_CACHE_PARAMS="--kv_type $KV_TYPE --window_size $WINDOW_SIZE --max_capacity_prompt $MAX_CAPACITY_PROMPT --kernel_size $KERNEL_SIZE --pooling $POOLING"
         ;;
     "pyramidkv")
         EXP_TYPE_PARAM="--pyramidkv"
+        KV_CACHE_PARAMS="--kv_type $KV_TYPE --window_size $WINDOW_SIZE --max_capacity_prompt $MAX_CAPACITY_PROMPT --kernel_size $KERNEL_SIZE --pooling $POOLING"
         ;;
     "kivi")
         EXP_TYPE_PARAM="--kivi"
+        ;;
+    "quest")
+        EXP_TYPE_PARAM="--quest"
         ;;
     "baseline")
         EXP_TYPE_PARAM=""
         ;;
     *)
-        echo "Warning: Unknown experiment type $EXP_TYPE"
-        EXP_TYPE_PARAM=""
+        echo "Error: Unknown experiment type '$EXP_TYPE'" >&2
+        echo "Allowed experiment types are: streamingllm, streamingllm_original, minference, snapkv, pyramidkv, kivi, quest, baseline" >&2
+        echo "SLURM_JOB_ID: $SLURM_JOB_ID" >&2
+        echo "SLURM_ARRAY_TASK_ID: $SLURM_ARRAY_TASK_ID" >&2
+        exit 1
         ;;
 esac
 
@@ -184,6 +234,7 @@ echo "Debug: ALL_CONFIGS array = ${ALL_CONFIGS[@]}"
 echo "Debug: SLURM_ARRAY_TASK_ID = $SLURM_ARRAY_TASK_ID"
 echo "Debug: Selected CONFIG = $CONFIG"
 echo "Debug: Full config path = configs/$CONFIG"
+echo "Debug: KV cache parameters = $KV_CACHE_PARAMS"
 
 if [ "$BENCHMARK" == "longproc" ]; then
     CONFIG_PATH="/scratch/gpfs/DANQIC/jz4391/HELMET/longproc_addon/configs/$CONFIG"
@@ -200,6 +251,7 @@ python /scratch/gpfs/DANQIC/jz4391/HELMET/eval.py \
     --model_name_or_path $MODEL_NAME \
     $QUANTIZE_PARAM \
     $EXP_TYPE_PARAM \
+    $KV_CACHE_PARAMS \
     $OPTIONS
 
 echo "Finished with exit code $?"
