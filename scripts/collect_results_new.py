@@ -55,6 +55,33 @@ helmet_performance_data = defaultdict(lambda: defaultdict(float))
 # Base directory (adjust if needed)
 base_dir = "/scratch/gpfs/DANQIC/jz4391/HELMET/output"
 
+# Add helper function to parse cache parameters
+def parse_cache_params(cache_dir: str, technique: str) -> str:
+    if technique == "streamingllm":
+        try:
+            # Format: local3968_init128
+            parts = cache_dir.split('_')
+            n_local = parts[0].replace('local', '')  # Get 3968 from local3968
+            n_init = parts[1].replace('init', '')    # Get 128 from init128
+            return f"n_local_{n_local}_n_init_{n_init}"
+        except (ValueError, IndexError) as e:
+            print(f"Warning: Could not parse streamingllm cache directory name: {cache_dir}\n")
+            return None
+    elif technique in ["snapkv", "pyramidkv"]:
+        try:
+            # Format: w32_c4096_k5_avgpool
+            parts = cache_dir.split('_')
+            # Extract window size, cache size, kernel size, and pooling
+            w_size = parts[0].replace('w', '')
+            c_size = parts[1].replace('c', '')
+            k_size = parts[2].replace('k', '')
+            pool = parts[3]
+            return f"w{w_size}_c{c_size}_k{k_size}_{pool}"
+        except (ValueError, IndexError) as e:
+            print(f"Warning: Could not parse {technique} cache directory name: {cache_dir}")
+            return None
+    return None
+
 # Traverse directories
 for technique in tqdm(os.listdir(base_dir), desc="Processing techniques"):
     technique_path = os.path.join(base_dir, technique)
@@ -90,33 +117,14 @@ for technique in tqdm(os.listdir(base_dir), desc="Processing techniques"):
                         row_key = (technique, context_length, model, "default")
                         subdirs.append((os.path.join(model_path, q), row_key))
             # Handle cache size variations for specific techniques
-            elif technique == "streamingllm":
+            elif technique in ["streamingllm", "snapkv", "pyramidkv"]:
                 for cache_dir in os.listdir(model_path):
                     cache_path = os.path.join(model_path, cache_dir)
                     if os.path.isdir(cache_path):
-                        # Extract n_local and n_init from directory name (e.g., n_local_512_n_init_128)
-                        try:
-                            # Split by underscores and find the values after n_local and n_init
-                            parts = cache_dir.split('_')
-                            n_local_idx = parts.index('local') + 1
-                            n_init_idx = parts.index('init') + 1
-                            n_local = parts[n_local_idx]
-                            n_init = parts[n_init_idx]
-                            # Create a combined cache size identifier
-                            cache_size = f"n_local_{n_local}_n_init_{n_init}"
-                            row_key = (technique, context_length, model, cache_size)
+                        cache_params = parse_cache_params(cache_dir, technique)
+                        if cache_params:
+                            row_key = (technique, context_length, model, cache_params)
                             subdirs.append((cache_path, row_key))
-                        except (ValueError, IndexError) as e:
-                            print(f"Warning: Could not parse streamingllm cache directory name: {cache_dir}")
-                            continue
-            elif technique in ["snapkv", "pyramidkv"]:
-                for cache_dir in os.listdir(model_path):
-                    cache_path = os.path.join(model_path, cache_dir)
-                    if os.path.isdir(cache_path):
-                        # Extract cache size from directory name (e.g., w32_c4096_k5_avgpool)
-                        cache_size = cache_dir.split('_')[1].replace('c', '')  # Extract number after 'c'
-                        row_key = (technique, context_length, model, f"cache_{cache_size}")
-                        subdirs.append((cache_path, row_key))
             else:
                 # For other techniques, use default cache size
                 row_key = (technique, context_length, model, "default")

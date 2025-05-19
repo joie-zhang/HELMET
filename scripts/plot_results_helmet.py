@@ -106,6 +106,8 @@ for i, perf_task in tqdm(enumerate(perf_tasks), desc='Processing tasks', total=l
                 # Custom sorting for streamingllm
                 if technique == "streamingllm":
                     # Extract n_local for sorting
+                    print("error message starts here:")
+                    print(group['cache_size'])
                     group['sort_key'] = group['cache_size'].apply(
                         lambda x: int(x.split('_')[2]) if x.startswith('n_local_') else 0
                     )
