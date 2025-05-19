@@ -82,6 +82,10 @@ def parse_cache_params(cache_dir: str, technique: str) -> str:
             return None
     return None
 
+# Add helper function to check if directory should be skipped
+def should_skip_dir(dirname: str) -> bool:
+    return dirname.startswith('gen_max') or dirname.startswith('archive')
+
 # Traverse directories
 for technique in tqdm(os.listdir(base_dir), desc="Processing techniques"):
     technique_path = os.path.join(base_dir, technique)
@@ -107,6 +111,8 @@ for technique in tqdm(os.listdir(base_dir), desc="Processing techniques"):
             # Handle baseline quantization folders
             if technique == "baseline":
                 for q in os.listdir(model_path):
+                    if should_skip_dir(q):
+                        continue
                     if q.startswith("4bit"):
                         row_key = ("INT4", context_length, model, "default")
                         subdirs.append((os.path.join(model_path, q), row_key))
@@ -119,6 +125,8 @@ for technique in tqdm(os.listdir(base_dir), desc="Processing techniques"):
             # Handle cache size variations for specific techniques
             elif technique in ["streamingllm", "snapkv", "pyramidkv"]:
                 for cache_dir in os.listdir(model_path):
+                    if should_skip_dir(cache_dir):
+                        continue
                     cache_path = os.path.join(model_path, cache_dir)
                     if os.path.isdir(cache_path):
                         cache_params = parse_cache_params(cache_dir, technique)

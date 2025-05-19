@@ -71,20 +71,20 @@ contexts = ['2k', '5k', '8k']  # Updated to include 8k
 
 fig, axes = plt.subplots(
     nrows=len(perf_tasks),
-    ncols=4,
-    figsize=(20, 12),
+    ncols=6,  # Changed from 4 to 6 to accommodate 8k
+    figsize=(30, 12),  # Increased figure width
 )
 
 for i, task in tqdm(enumerate(perf_tasks), desc='Processing tasks', total=len(perf_tasks)):
-    for j in tqdm(range(4), desc=f'Processing plots for {task}', leave=False):
+    for j in tqdm(range(6), desc=f'Processing plots for {task}', leave=False):  # Changed from 4 to 6
         ax = axes[i, j]
-        if j < 2:
+        if j < 3:  # Changed from 2 to 3
             df = longproc_memory_df
             context = contexts[j]
             x_label = 'Memory (GB)'
         else:
             df = longproc_throughput_df
-            context = contexts[j - 2]
+            context = contexts[j - 3]  # Changed from j - 2 to j - 3
             # Calculate latency as 1/throughput with zero handling
             df = df.copy()  # Create a copy to avoid modifying the original
             for task in perf_tasks:
@@ -172,7 +172,7 @@ for i, task in tqdm(enumerate(perf_tasks), desc='Processing tasks', total=len(pe
         if i == len(perf_tasks) - 1:
             ax.set_xlabel(x_label, fontsize=8)
         if i == 0:
-            col_title = (f"Memory {context.replace('5k', '0.5K').replace('2k', '2K').replace('8k', '8K')}" if j < 2 else 
+            col_title = (f"Memory {context.replace('5k', '0.5K').replace('2k', '2K').replace('8k', '8K')}" if j < 3 else 
                         f"Latency {context.replace('5k', '0.5K').replace('2k', '2K').replace('8k', '8K')}")
             ax.set_title(col_title, fontsize=10)
 
