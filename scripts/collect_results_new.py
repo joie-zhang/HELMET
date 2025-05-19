@@ -60,6 +60,11 @@ for technique in tqdm(os.listdir(base_dir), desc="Processing techniques"):
     technique_path = os.path.join(base_dir, technique)
     if not os.path.isdir(technique_path):
         continue
+    
+    # Skip quest technique
+    if technique == "quest":
+        continue
+        
     for context_length in tqdm(os.listdir(technique_path), desc=f"Processing {technique} contexts", leave=False):
         context_path = os.path.join(technique_path, context_length)
         if not os.path.isdir(context_path):
@@ -70,29 +75,59 @@ for technique in tqdm(os.listdir(base_dir), desc="Processing techniques"):
             if not os.path.isdir(model_path):
                 continue
 
-            subdirs = [(model_path, (technique, context_length, model))]
-            # Handle quantization folders for baseline
+            subdirs = []
+            
+            # Handle baseline quantization folders
             if technique == "baseline":
-                subdirs = []  # Reset subdirs for baseline
                 for q in os.listdir(model_path):
                     if q.startswith("4bit"):
-                        row_key = ("INT4", context_length, model)
+                        row_key = ("INT4", context_length, model, "default")
                         subdirs.append((os.path.join(model_path, q), row_key))
                     elif q.startswith("8bit"):
-                        row_key = ("INT8", context_length, model)
+                        row_key = ("INT8", context_length, model, "default")
                         subdirs.append((os.path.join(model_path, q), row_key))
                     elif q.startswith("16bit"):
-                        row_key = (technique, context_length, model)
+                        row_key = (technique, context_length, model, "default")
                         subdirs.append((os.path.join(model_path, q), row_key))
+            # Handle cache size variations for specific techniques
+            elif technique == "streamingllm":
+                for cache_dir in os.listdir(model_path):
+                    cache_path = os.path.join(model_path, cache_dir)
+                    if os.path.isdir(cache_path):
+                        # Extract n_local and n_init from directory name (e.g., n_local_512_n_init_128)
+                        try:
+                            # Split by underscores and find the values after n_local and n_init
+                            parts = cache_dir.split('_')
+                            n_local_idx = parts.index('local') + 1
+                            n_init_idx = parts.index('init') + 1
+                            n_local = parts[n_local_idx]
+                            n_init = parts[n_init_idx]
+                            # Create a combined cache size identifier
+                            cache_size = f"n_local_{n_local}_n_init_{n_init}"
+                            row_key = (technique, context_length, model, cache_size)
+                            subdirs.append((cache_path, row_key))
+                        except (ValueError, IndexError) as e:
+                            print(f"Warning: Could not parse streamingllm cache directory name: {cache_dir}")
+                            continue
+            elif technique in ["snapkv", "pyramidkv"]:
+                for cache_dir in os.listdir(model_path):
+                    cache_path = os.path.join(model_path, cache_dir)
+                    if os.path.isdir(cache_path):
+                        # Extract cache size from directory name (e.g., w32_c4096_k5_avgpool)
+                        cache_size = cache_dir.split('_')[1].replace('c', '')  # Extract number after 'c'
+                        row_key = (technique, context_length, model, f"cache_{cache_size}")
+                        subdirs.append((cache_path, row_key))
+            else:
+                # For other techniques, use default cache size
+                row_key = (technique, context_length, model, "default")
+                subdirs.append((model_path, row_key))
 
             for subdir, row_key in subdirs:
                 if not os.path.isdir(subdir):
                     continue
 
                 tasks = TASKS_BY_CONTEXT.get(context_length, [])
-
-                # Determine if this is LongProc or HELMET based on context length
-                is_longproc = context_length in ["2k", "5k"]
+                is_longproc = context_length in ["2k", "5k", "8k"]  # Updated to include 8k
                 memory_data = longproc_memory_data if is_longproc else helmet_memory_data
                 throughput_data = longproc_throughput_data if is_longproc else helmet_throughput_data
                 performance_data = longproc_performance_data if is_longproc else helmet_performance_data
@@ -140,10 +175,15 @@ for technique in tqdm(os.listdir(base_dir), desc="Processing techniques"):
                                     print(f"Warning: No value found for key {key} in score data")
 
 # Create DataFrames
-def create_dataframe(data_dict: Dict[Tuple[str, str, str], Dict[str, float]]) -> pd.DataFrame:
+def create_dataframe(data_dict: Dict[Tuple[str, str, str, str], Dict[str, float]]) -> pd.DataFrame:
     records = []
-    for (technique, context_length, model), task_data in data_dict.items():
-        record = {"technique": technique, "context_length": context_length, "model": model}
+    for (technique, context_length, model, cache_size), task_data in data_dict.items():
+        record = {
+            "technique": technique,
+            "context_length": context_length,
+            "model": model,
+            "cache_size": cache_size
+        }
         record.update(task_data)
         records.append(record)
     return pd.DataFrame(records)
