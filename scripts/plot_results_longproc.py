@@ -23,6 +23,20 @@ os.makedirs(plots_dir, exist_ok=True)
 # 1) Seaborn style
 sns.set(style='whitegrid')
 
+# Add helper function to format cache size for display
+def format_cache_size(cache_size: str) -> str:
+    if cache_size == "default":
+        return "default"
+    elif cache_size.startswith("n_local_"):
+        # For streamingllm, format as "n_local=X, n_init=Y"
+        parts = cache_size.split('_')
+        n_local = parts[2]
+        n_init = parts[5]
+        return f"n_local={n_local}, n_init={n_init}"
+    else:
+        # For other techniques, format as "cache=X"
+        return f"cache={cache_size.replace('cache_', '')}"
+
 # 2) Define color palette for models and marker shapes for techniques
 model_palette = {
     'Llama-3.1-8B-Instruct': 'tab:orange',
@@ -53,7 +67,7 @@ marker_size_dict = {
 
 # --- Unified 3×4 grid for LongProc Memory/Throughput vs Performance ---
 perf_tasks = ['html_to_tsv', 'pseudo_to_code', 'travel_planning']
-contexts   = ['5k', '2k']
+contexts = ['2k', '5k', '8k']  # Updated to include 8k
 
 fig, axes = plt.subplots(
     nrows=len(perf_tasks),
@@ -80,61 +94,124 @@ for i, task in tqdm(enumerate(perf_tasks), desc='Processing tasks', total=len(pe
                 df[task] = 1 / df[task]
             x_label = 'Latency (s/sample)'
 
+        # Group data by technique and model
         subset = df[df['context_length'] == context]
-        for _, row in tqdm(subset.iterrows(), desc=f'Processing datapoints for {task} ({context})', leave=False):
-            x = row[task]
-            perf_row = longproc_performance_df[
-                (longproc_performance_df['technique'] == row['technique']) &
-                (longproc_performance_df['context_length'] == context) &
-                (longproc_performance_df['model'] == row['model'])
-            ]
-            if perf_row.empty or pd.isna(x):
-                continue
-            y = perf_row.iloc[0][task]
-
-            ax.scatter(
-                x, y,
-                color=model_palette[row['model']],
-                marker=marker_dict[row['technique']],
-                s=marker_size_dict[marker_dict[row['technique']]],
-                edgecolor='k',
-                linewidth=0.5,
-            )
+        for (technique, model), group in subset.groupby(['technique', 'model']):
+            # Sort by cache size if available
+            if 'cache_size' in group.columns:
+                # Custom sorting for streamingllm
+                if technique == "streamingllm":
+                    # Extract n_local for sorting
+                    group['sort_key'] = group['cache_size'].apply(
+                        lambda x: int(x.split('_')[2]) if x.startswith('n_local_') else 0
+                    )
+                    group = group.sort_values('sort_key')
+                    group = group.drop('sort_key', axis=1)
+                else:
+                    # For other techniques, sort by cache size number
+                    group['sort_key'] = group['cache_size'].apply(
+                        lambda x: int(x.replace('cache_', '')) if x.startswith('cache_') else 0
+                    )
+                    group = group.sort_values('sort_key')
+                    group = group.drop('sort_key', axis=1)
+            
+            x_values = []
+            y_values = []
+            
+            for _, row in group.iterrows():
+                x = row[task]
+                perf_row = longproc_performance_df[
+                    (longproc_performance_df['technique'] == row['technique']) &
+                    (longproc_performance_df['context_length'] == context) &
+                    (longproc_performance_df['model'] == row['model']) &
+                    (longproc_performance_df['cache_size'] == row['cache_size'])
+                ]
+                if perf_row.empty or pd.isna(x):
+                    continue
+                y = perf_row.iloc[0][task]
+                
+                x_values.append(x)
+                y_values.append(y)
+                
+                # Plot individual points
+                ax.scatter(
+                    x, y,
+                    color=model_palette[model],
+                    marker=marker_dict[technique],
+                    s=marker_size_dict[marker_dict[technique]],
+                    edgecolor='k',
+                    linewidth=0.5,
+                )
+                
+                # Add cache size annotation for the last point in each group
+                if len(x_values) > 1 and row.name == group.index[-1]:
+                    # Format the cache size for display
+                    cache_label = format_cache_size(row['cache_size'])
+                    # Add annotation with offset
+                    ax.annotate(
+                        cache_label,
+                        (x, y),
+                        xytext=(5, 5),
+                        textcoords='offset points',
+                        fontsize=6,
+                        alpha=0.7
+                    )
+            
+            # Connect points with lines if there are multiple cache sizes
+            if len(x_values) > 1:
+                ax.plot(
+                    x_values, y_values,
+                    color=model_palette[model],
+                    linestyle='--',
+                    alpha=0.5,
+                    linewidth=1
+                )
 
         if j == 0:
             ax.set_ylabel(task.replace('_', ' ').title(), fontsize=8)
         if i == len(perf_tasks) - 1:
             ax.set_xlabel(x_label, fontsize=8)
         if i == 0:
-            col_title = (f"Memory {context.replace('5k', '0.5K').replace('2k', '2K')}" if j < 2 else 
-                        f"Latency {context.replace('5k', '0.5K').replace('2k', '2K')}")
+            col_title = (f"Memory {context.replace('5k', '0.5K').replace('2k', '2K').replace('8k', '8K')}" if j < 2 else 
+                        f"Latency {context.replace('5k', '0.5K').replace('2k', '2K').replace('8k', '8K')}")
             ax.set_title(col_title, fontsize=10)
 
 # --- shared legend across all subplots, placed at bottom ---
-model_handles = [
-    Line2D([0], [0],
-           marker='o', color='w',
-           markerfacecolor=color,
-           markersize=10,
-           label=model)
-    for model, color in model_palette.items()
-]
-tech_handles = [
-    Line2D([0], [0],
-           marker=marker, color='k',
-           linestyle='None',
-           markersize=10,
-           label=tech)
-    for tech, marker in marker_dict.items()
-]
-all_handles = model_handles + tech_handles
-all_labels  = list(model_palette.keys()) + list(marker_dict.keys())
+legend_handles = []
+legend_labels = []
+
+# Add model handles
+for model, color in model_palette.items():
+    legend_handles.append(Line2D([0], [0],
+                                marker='o', color='w',
+                                markerfacecolor=color,
+                                markersize=10,
+                                label=model))
+    legend_labels.append(model)
+
+# Add technique handles with cache size info
+for tech, marker in marker_dict.items():
+    if tech in ["snapkv", "pyramidkv", "streamingllm"]:
+        # Add a line to show connection between cache sizes
+        legend_handles.append(Line2D([0], [0],
+                                   marker=marker, color='k',
+                                   linestyle='--',
+                                   markersize=10,
+                                   label=f"{tech} (connected cache sizes)"))
+        legend_labels.append(f"{tech} (connected cache sizes)")
+    else:
+        legend_handles.append(Line2D([0], [0],
+                                   marker=marker, color='k',
+                                   linestyle='None',
+                                   markersize=10,
+                                   label=tech))
+        legend_labels.append(tech)
 
 fig.legend(
-    all_handles,
-    all_labels,
+    legend_handles,
+    legend_labels,
     loc='center',
-    ncol=len(all_handles),
+    ncol=len(legend_handles),
     bbox_to_anchor=(0.5, 0.05),
     bbox_transform=fig.transFigure,
     title='Legend',
