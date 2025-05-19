@@ -4,6 +4,7 @@ import os
 import seaborn as sns
 from matplotlib.lines import Line2D
 from tqdm import tqdm
+import numpy as np
 
 # Load the HELMET data
 helmet_memory_df = pd.read_csv('/scratch/gpfs/DANQIC/jz4391/HELMET/results/helmet_results/helmet_memory_usage.csv')
@@ -25,7 +26,7 @@ sns.set(style='whitegrid')
 # 2) Define the 7 performance tasks (including the three cite metrics) and the two contexts
 perf_tasks = [
     'recall_jsonkv', 'rag_nq', 'rag_hotpotqa', 'rerank',
-    'cite_str_em', 'cite_citation_rec', 'cite_citation_prec'
+    'cite_str_em', 'cite_citation_rec', 'cite_citation_prec', 'niah'
 ]
 contexts = ['16k', '32k']
 
@@ -64,51 +65,113 @@ fig, axes = plt.subplots(
     figsize=(20, 30),
 )
 
+# Add a helper function to format cache size for display
+def format_cache_size(cache_size: str) -> str:
+    if cache_size == "default":
+        return "default"
+    elif cache_size.startswith("n_local_"):
+        # For streamingllm, format as "n_local=X, n_init=Y"
+        parts = cache_size.split('_')
+        n_local = parts[2]
+        n_init = parts[5]
+        return f"n_local={n_local}, n_init={n_init}"
+    else:
+        # For other techniques, format as "cache=X"
+        return f"cache={cache_size.replace('cache_', '')}"
+
 # 5) Populate each subplot
 for i, perf_task in tqdm(enumerate(perf_tasks), desc='Processing tasks', total=len(perf_tasks)):
-    # memory/throughput column uses same underlying column 'cite' for all cite_* tasks
     mem_thr_col = 'cite' if perf_task.startswith('cite_') else perf_task
 
     for j in range(4):
         ax = axes[i, j]
         if j < 2:
-            df      = helmet_memory_df
+            df = helmet_memory_df
             context = contexts[j]
             x_label = 'Memory (GB)'
         else:
-            df      = helmet_throughput_df
+            df = helmet_throughput_df
             context = contexts[j - 2]
-            # Calculate latency as 1/throughput with zero handling
-            df = df.copy()  # Create a copy to avoid modifying the original
-            for task in ['recall_jsonkv', 'rag_nq', 'rag_hotpotqa', 'rerank', 'cite']:
-                # Replace 0 with NaN to avoid division by zero
+            df = df.copy()
+            for task in ['recall_jsonkv', 'rag_nq', 'rag_hotpotqa', 'rerank', 'cite', 'niah']:
                 df[task] = df[task].replace(0, float('nan'))
-                # Convert non-zero throughput to latency
                 df[task] = 1 / df[task]
             x_label = 'Latency (s/sample)'
 
-        # plot one dot per (technique, model)
+        # Group data by technique and model
         subset = df[df['context_length'] == context]
-        for _, row in tqdm(subset.iterrows(), desc=f'Plotting {perf_task} ({context})', leave=False):
-            x = row[mem_thr_col]
-            # find the matching performance
-            perf_row = helmet_performance_df[
-                (helmet_performance_df['technique']     == row['technique']) &
-                (helmet_performance_df['context_length'] == context) &
-                (helmet_performance_df['model']         == row['model'])
-            ]
-            if perf_row.empty or pd.isna(x):
-                continue
-            y = perf_row.iloc[0][perf_task]
-
-            ax.scatter(
-                x, y,
-                color = model_palette[row['model']],
-                marker= marker_dict[row['technique']],
-                s      = marker_size_dict[marker_dict[row['technique']]],
-                edgecolor='k',
-                linewidth=0.5,
-            )
+        for (technique, model), group in subset.groupby(['technique', 'model']):
+            # Sort by cache size if available
+            if 'cache_size' in group.columns:
+                # Custom sorting for streamingllm
+                if technique == "streamingllm":
+                    # Extract n_local for sorting
+                    group['sort_key'] = group['cache_size'].apply(
+                        lambda x: int(x.split('_')[2]) if x.startswith('n_local_') else 0
+                    )
+                    group = group.sort_values('sort_key')
+                    group = group.drop('sort_key', axis=1)
+                else:
+                    # For other techniques, sort by cache size number
+                    group['sort_key'] = group['cache_size'].apply(
+                        lambda x: int(x.replace('cache_', '')) if x.startswith('cache_') else 0
+                    )
+                    group = group.sort_values('sort_key')
+                    group = group.drop('sort_key', axis=1)
+            
+            x_values = []
+            y_values = []
+            cache_sizes = []  # Store cache sizes for annotation
+            
+            for _, row in group.iterrows():
+                x = row[mem_thr_col]
+                perf_row = helmet_performance_df[
+                    (helmet_performance_df['technique'] == row['technique']) &
+                    (helmet_performance_df['context_length'] == context) &
+                    (helmet_performance_df['model'] == row['model']) &
+                    (helmet_performance_df['cache_size'] == row['cache_size'])
+                ]
+                if perf_row.empty or pd.isna(x):
+                    continue
+                y = perf_row.iloc[0][perf_task]
+                
+                x_values.append(x)
+                y_values.append(y)
+                cache_sizes.append(row['cache_size'])
+                
+                # Plot individual points
+                ax.scatter(
+                    x, y,
+                    color=model_palette[model],
+                    marker=marker_dict[technique],
+                    s=marker_size_dict[marker_dict[technique]],
+                    edgecolor='k',
+                    linewidth=0.5,
+                )
+                
+                # Add cache size annotation for the last point in each group
+                if len(x_values) > 1 and row.name == group.index[-1]:
+                    # Format the cache size for display
+                    cache_label = format_cache_size(row['cache_size'])
+                    # Add annotation with offset
+                    ax.annotate(
+                        cache_label,
+                        (x, y),
+                        xytext=(5, 5),
+                        textcoords='offset points',
+                        fontsize=6,
+                        alpha=0.7
+                    )
+            
+            # Connect points with lines if there are multiple cache sizes
+            if len(x_values) > 1:
+                ax.plot(
+                    x_values, y_values,
+                    color=model_palette[model],
+                    linestyle='--',
+                    alpha=0.5,
+                    linewidth=1
+                )
 
         # only label the leftmost column with the task name
         if j == 0:
@@ -123,31 +186,41 @@ for i, perf_task in tqdm(enumerate(perf_tasks), desc='Processing tasks', total=l
             ax.set_title(col_title, fontsize=10)
 
 # 6) Build a shared legend to the right
-model_handles = [
-    Line2D([0], [0],
-           marker='o', color='w',
-           markerfacecolor=color,
-           markersize=10,
-           label=model)
-    for model, color in model_palette.items()
-]
-tech_handles = [
-    Line2D([0], [0],
-           marker=marker, color='k',
-           linestyle='None',
-           markersize=10,
-           label=tech)
-    for tech, marker in marker_dict.items()
-]
+legend_handles = []
+legend_labels = []
 
-all_handles = model_handles + tech_handles
-all_labels  = list(model_palette.keys()) + list(marker_dict.keys())
+# Add model handles
+for model, color in model_palette.items():
+    legend_handles.append(Line2D([0], [0],
+                                marker='o', color='w',
+                                markerfacecolor=color,
+                                markersize=10,
+                                label=model))
+    legend_labels.append(model)
+
+# Add technique handles with cache size info
+for tech, marker in marker_dict.items():
+    if tech in ["snapkv", "pyramidkv", "streamingllm"]:
+        # Add a line to show connection between cache sizes
+        legend_handles.append(Line2D([0], [0],
+                                   marker=marker, color='k',
+                                   linestyle='--',
+                                   markersize=10,
+                                   label=f"{tech} (connected cache sizes)"))
+        legend_labels.append(f"{tech} (connected cache sizes)")
+    else:
+        legend_handles.append(Line2D([0], [0],
+                                   marker=marker, color='k',
+                                   linestyle='None',
+                                   markersize=10,
+                                   label=tech))
+        legend_labels.append(tech)
 
 fig.legend(
-    all_handles,
-    all_labels,
+    legend_handles,
+    legend_labels,
     loc='center',
-    ncol=len(all_handles),
+    ncol=len(legend_handles),
     bbox_to_anchor=(0.5, 0.05),  # Changed from 0.02 to 0.05 to move legend up
     bbox_transform=fig.transFigure,
     title='Legend',
