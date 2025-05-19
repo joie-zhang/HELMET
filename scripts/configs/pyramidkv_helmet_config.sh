@@ -1,13 +1,25 @@
-# pyramidkv_helmet_config.sh
+# # pyramidkv_helmet_config.sh
 # declare -a BASE_CONFIGS=("cite" "rerank" "recall_jsonkv" "rag_nq" "rag_hotpotqa" "niah")
-declare -a BASE_CONFIGS=("niah")
-declare -a CONTEXT_LENGTHS=("16k" "32k")
-declare -a MODELS=("Llama-3.1-8B-Instruct")
-# declare -a MODELS=("Qwen2.5-7B-Instruct")
-# declare -a QUANTIZE=(16)  # Add quantization options
+# declare -a CONTEXT_LENGTHS=("16k" "32k")
+# declare -a MODELS=("Llama-3.1-8B-Instruct")
+# # declare -a MODELS=("Qwen2.5-7B-Instruct")
+# declare -a QUANTIZE=("")  # non-baseline experiments should not support quantize
+# EXP_TYPE="pyramidkv"
+# BENCHMARK="helmet"
+# SEED=42
+
+# pyramidkv_longproc_config.sh
+# declare -a BASE_CONFIGS=("html_to_tsv" "pseudo_to_code")
+# declare -a CONTEXT_LENGTHS=("0.5k")
+# declare -a BASE_CONFIGS=("html_to_tsv" "pseudo_to_code" "travel_planning")
+# declare -a CONTEXT_LENGTHS=("2k")
+declare -a BASE_CONFIGS=("html_to_tsv" "travel_planning")
+declare -a CONTEXT_LENGTHS=("8k")
+# declare -a MODELS=("Llama-3.1-8B-Instruct")
+declare -a MODELS=("Qwen2.5-7B-Instruct")
 declare -a QUANTIZE=("")  # non-baseline experiments should not support quantize
 EXP_TYPE="pyramidkv"
-BENCHMARK="helmet"
+BENCHMARK="longproc"
 SEED=42
 
 # KV Cache Configuration Parameters
@@ -22,7 +34,7 @@ KERNEL_SIZE=5                 # Kernel size for attention pooling
 POOLING="avgpool"             # Pooling method for attention (maxpool or avgpool)
 
 # SLURM Configuration
-JOB_TIME="1:00:00"
+JOB_TIME="10:00:00"
 JOB_NAME="${EXP_TYPE}_${BENCHMARK}_${CONTEXT_LENGTHS[-1]}_eval"
 
 # Export variables so they're available to the job script
