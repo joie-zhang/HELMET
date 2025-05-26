@@ -67,9 +67,9 @@ marker_size_dict = {
 
 # --- Unified 3×4 grid for LongProc Memory/Throughput vs Performance ---
 perf_tasks = ['html_to_tsv', 'pseudo_to_code', 'travel_planning']
-contexts = ['2k', '5k', '8k']  # Updated to include 8k
+contexts = ['5k', '2k', '8k']  # Reordered to 0.5K, 2K, 8K
 
-def create_plot(df, x_label, is_latency=False):
+def create_plot(df, x_label, is_latency=False, is_memory=False, is_performance=False):
     fig, axes = plt.subplots(
         nrows=len(perf_tasks),
         ncols=3,  # 3 columns for the contexts
@@ -88,14 +88,12 @@ def create_plot(df, x_label, is_latency=False):
                 if 'cache_size' in group.columns:
                     # Custom sorting for streamingllm
                     if technique == "streamingllm":
-                        # Extract n_local for sorting
                         group['sort_key'] = group['cache_size'].apply(
                             lambda x: int(x.split('_')[2]) if x.startswith('n_local_') else 0
                         )
                         group = group.sort_values('sort_key')
                         group = group.drop('sort_key', axis=1)
                     else:
-                        # For other techniques, sort by cache size number
                         group['sort_key'] = group['cache_size'].apply(
                             lambda x: int(x.replace('cache_', '')) if x.startswith('cache_') else 0
                         )
@@ -106,17 +104,30 @@ def create_plot(df, x_label, is_latency=False):
                 y_values = []
                 
                 for _, row in group.iterrows():
-                    x = row[task]
-                    perf_row = longproc_performance_df[
-                        (longproc_performance_df['technique'] == row['technique']) &
-                        (longproc_performance_df['context_length'] == context) &
-                        (longproc_performance_df['model'] == row['model']) &
-                        (longproc_performance_df['cache_size'] == row['cache_size'])
-                    ]
-                    if perf_row.empty or pd.isna(x):
-                        continue
-                    y = perf_row.iloc[0][task]
+                    # For memory plot, use memory_usage as x value
+                    if is_memory:
+                        x = row['memory_usage']
+                        y = row[task]
+                    # For performance plot, use the task value directly
+                    elif is_performance:
+                        x = row[task]
+                        y = row[task]  # Same value for both axes
+                    else:
+                        x = row[task]
+                        # For throughput/latency, get performance from performance_df
+                        perf_row = longproc_performance_df[
+                            (longproc_performance_df['technique'] == row['technique']) &
+                            (longproc_performance_df['context_length'] == context) &
+                            (longproc_performance_df['model'] == row['model']) &
+                            (longproc_performance_df['cache_size'] == row['cache_size'])
+                        ]
+                        if perf_row.empty or pd.isna(x):
+                            continue
+                        y = perf_row.iloc[0][task]
                     
+                    if pd.isna(x) or pd.isna(y):
+                        continue
+                        
                     x_values.append(x)
                     y_values.append(y)
                     
@@ -132,9 +143,7 @@ def create_plot(df, x_label, is_latency=False):
                     
                     # Add cache size annotation for the last point in each group
                     if len(x_values) > 1 and row.name == group.index[-1]:
-                        # Format the cache size for display
                         cache_label = format_cache_size(row['cache_size'])
-                        # Add annotation with offset
                         ax.annotate(
                             cache_label,
                             (x, y),
@@ -207,7 +216,8 @@ def create_plot(df, x_label, is_latency=False):
     plt.tight_layout(rect=[0, 0.06, 1, 0.98])
     return fig
 
-# Create throughput plot
+# Create all four plots
+# 1. Throughput plot
 throughput_fig = create_plot(longproc_throughput_df, 'Throughput (samples/s)')
 throughput_fig.savefig(
     os.path.join(plots_dir, 'longproc_throughput_plot.png'),
@@ -215,17 +225,31 @@ throughput_fig.savefig(
     dpi=300,
 )
 
-# Create latency plot
+# 2. Latency plot
 latency_df = longproc_throughput_df.copy()
 for task in perf_tasks:
-    # Replace 0 with NaN to avoid division by zero
     latency_df[task] = latency_df[task].replace(0, float('nan'))
-    # Convert non-zero throughput to latency
     latency_df[task] = 1 / latency_df[task]
 
 latency_fig = create_plot(latency_df, 'Latency (s/sample)')
 latency_fig.savefig(
     os.path.join(plots_dir, 'longproc_latency_plot.png'),
+    bbox_inches='tight',
+    dpi=300,
+)
+
+# 3. Memory plot
+memory_fig = create_plot(longproc_memory_df, 'Memory Usage (GB)', is_memory=True)
+memory_fig.savefig(
+    os.path.join(plots_dir, 'longproc_memory_plot.png'),
+    bbox_inches='tight',
+    dpi=300,
+)
+
+# 4. Performance plot
+performance_fig = create_plot(longproc_performance_df, 'Performance Score', is_performance=True)
+performance_fig.savefig(
+    os.path.join(plots_dir, 'longproc_performance_plot.png'),
     bbox_inches='tight',
     dpi=300,
 )

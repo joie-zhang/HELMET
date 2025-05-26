@@ -9,10 +9,10 @@
 # SEED=42
 
 # snapkv_longproc_config.sh
-# declare -a BASE_CONFIGS=("html_to_tsv" "pseudo_to_code")
-# declare -a CONTEXT_LENGTHS=("0.5k")
-declare -a BASE_CONFIGS=("html_to_tsv" "pseudo_to_code" "travel_planning")
-declare -a CONTEXT_LENGTHS=("2k")
+declare -a BASE_CONFIGS=("html_to_tsv" "pseudo_to_code")
+declare -a CONTEXT_LENGTHS=("0.5k")
+# declare -a BASE_CONFIGS=("html_to_tsv" "pseudo_to_code" "travel_planning")
+# declare -a CONTEXT_LENGTHS=("2k")
 # declare -a BASE_CONFIGS=("html_to_tsv" "travel_planning")
 # declare -a CONTEXT_LENGTHS=("8k")
 # declare -a MODELS=("Llama-3.1-8B-Instruct")
@@ -41,7 +41,7 @@ KERNEL_SIZE=7                 # Kernel size for attention pooling
 POOLING="maxpool"             # Pooling method for attention (maxpool or avgpool)
 
 # SLURM Configuration
-JOB_TIME="3:00:00"
+JOB_TIME="1:00:00"
 JOB_NAME="${EXP_TYPE}_${BENCHMARK}_${CONTEXT_LENGTHS[-1]}_eval"
 
 # Export variables so they're available to the job script

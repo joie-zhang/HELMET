@@ -67,7 +67,7 @@ marker_size_dict = {
 
 # --- Unified 3×4 grid for LongProc Memory/Throughput vs Performance ---
 perf_tasks = ['html_to_tsv', 'pseudo_to_code', 'travel_planning']
-contexts = ['2k', '5k', '8k']  # Updated to include 8k
+contexts = ['5k', '2k', '8k']  # Reordered to 0.5K, 2K, 8K
 
 fig, axes = plt.subplots(
     nrows=len(perf_tasks),
@@ -85,14 +85,7 @@ for i, task in tqdm(enumerate(perf_tasks), desc='Processing tasks', total=len(pe
         else:
             df = longproc_throughput_df
             context = contexts[j - 3]  # Changed from j - 2 to j - 3
-            # Calculate latency as 1/throughput with zero handling
-            df = df.copy()  # Create a copy to avoid modifying the original
-            for task in perf_tasks:
-                # Replace 0 with NaN to avoid division by zero
-                df[task] = df[task].replace(0, float('nan'))
-                # Convert non-zero throughput to latency
-                df[task] = 1 / df[task]
-            x_label = 'Latency (s/sample)'
+            x_label = 'Throughput (samples/s)'
 
         # Group data by technique and model
         subset = df[df['context_length'] == context]
@@ -173,7 +166,7 @@ for i, task in tqdm(enumerate(perf_tasks), desc='Processing tasks', total=len(pe
             ax.set_xlabel(x_label, fontsize=8)
         if i == 0:
             col_title = (f"Memory {context.replace('5k', '0.5K').replace('2k', '2K').replace('8k', '8K')}" if j < 3 else 
-                        f"Latency {context.replace('5k', '0.5K').replace('2k', '2K').replace('8k', '8K')}")
+                        f"Throughput {context.replace('5k', '0.5K').replace('2k', '2K').replace('8k', '8K')}")
             ax.set_title(col_title, fontsize=10)
 
 # --- shared legend across all subplots, placed at bottom ---

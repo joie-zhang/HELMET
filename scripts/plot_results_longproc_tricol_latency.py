@@ -67,7 +67,7 @@ marker_size_dict = {
 
 # --- Unified 3×4 grid for LongProc Memory/Throughput vs Performance ---
 perf_tasks = ['html_to_tsv', 'pseudo_to_code', 'travel_planning']
-contexts = ['2k', '5k', '8k']  # Updated to include 8k
+contexts = ['5k', '2k', '8k']  # Reordered to 0.5K, 2K, 8K
 
 fig, axes = plt.subplots(
     nrows=len(perf_tasks),
