@@ -11,10 +11,28 @@ helmet_memory_df = pd.read_csv('/scratch/gpfs/DANQIC/jz4391/HELMET/results/helme
 helmet_throughput_df = pd.read_csv('/scratch/gpfs/DANQIC/jz4391/HELMET/results/helmet_results/helmet_throughput.csv')
 helmet_performance_df = pd.read_csv('/scratch/gpfs/DANQIC/jz4391/HELMET/results/helmet_results/helmet_performance.csv')
 
-# Filter out the 'quest' technique
-helmet_memory_df = helmet_memory_df[helmet_memory_df['technique'] != 'quest']
-helmet_throughput_df = helmet_throughput_df[helmet_throughput_df['technique'] != 'quest']
-helmet_performance_df = helmet_performance_df[helmet_performance_df['technique'] != 'quest']
+# Filter out the 'quest' and 'streamingllm_original' techniques
+helmet_memory_df = helmet_memory_df[~helmet_memory_df['technique'].isin(['quest', 'streamingllm_original'])]
+helmet_throughput_df = helmet_throughput_df[~helmet_throughput_df['technique'].isin(['quest', 'streamingllm_original'])]
+helmet_performance_df = helmet_performance_df[~helmet_performance_df['technique'].isin(['quest', 'streamingllm_original'])]
+
+# Filter out specific unwanted cache size configurations
+unwanted_configs = [
+    ('pyramidkv', 'w32_c4096_k5_avgpool'),
+    ('snapkv', 'w32_c4096_k5_avgpool'), 
+    ('streamingllm', 'n_local_3968_n_init_128')
+]
+
+# Apply filters to all dataframes
+for technique, cache_size in unwanted_configs:
+    condition = (helmet_memory_df['technique'] == technique) & (helmet_memory_df['cache_size'] == cache_size)
+    helmet_memory_df = helmet_memory_df[~condition]
+    
+    condition = (helmet_throughput_df['technique'] == technique) & (helmet_throughput_df['cache_size'] == cache_size)
+    helmet_throughput_df = helmet_throughput_df[~condition]
+    
+    condition = (helmet_performance_df['technique'] == technique) & (helmet_performance_df['cache_size'] == cache_size)
+    helmet_performance_df = helmet_performance_df[~condition]
 
 # Create output directory for plots
 plots_dir = '/scratch/gpfs/DANQIC/jz4391/HELMET/results/plots'
@@ -23,7 +41,7 @@ os.makedirs(plots_dir, exist_ok=True)
 # 1) Seaborn style
 sns.set(style='whitegrid')
 
-# 2) Define the 7 performance tasks (including the three cite metrics) and the two contexts
+# 2) Define the 8 performance tasks (including the three cite metrics) and the two contexts
 perf_tasks = [
     'recall_jsonkv', 'rag_nq', 'rag_hotpotqa', 'rerank',
     'cite_str_em', 'cite_citation_rec', 'cite_citation_prec', 'niah'
@@ -43,7 +61,7 @@ marker_dict = {
     'pyramidkv':    'P',
     'snapkv':       'X',
     'streamingllm': '*',
-    'streamingllm_original': '8',
+#     'streamingllm_original': '8',
 }
 
 # Add marker size dictionary to compensate for visual differences
@@ -55,17 +73,17 @@ marker_size_dict = {
     'P': 120,  # pyramidkv - slightly larger
     'X': 120,  # snapkv - slightly larger
     '*': 200,  # streamingllm - make stars bigger
-    '8': 85,  # streamingllm_original - make octagons smaller
+#     '8': 85,  # streamingllm_original - make octagons smaller
 }
 
-# 4) Create a 7×4 grid
+# 4) Create a 8×4 grid
 fig, axes = plt.subplots(
     nrows=len(perf_tasks),
     ncols=4,
     figsize=(20, 30),
 )
 
-# Add a helper function to format cache size for display
+# Add helper function to format cache size for display
 def format_cache_size(cache_size: str) -> str:
     if cache_size == "default":
         return "default"
@@ -75,6 +93,13 @@ def format_cache_size(cache_size: str) -> str:
         n_local = parts[2]
         n_init = parts[5]
         return f"n_local={n_local}, n_init={n_init}"
+    elif cache_size.startswith("w32_c") and "_k" in cache_size:
+        # For SnapKV and PyramidKV with format w32_c{cache}_k{k}_{pool}
+        parts = cache_size.split('_')
+        cache_val = parts[1][1:]  # Remove 'c' prefix
+        k_val = parts[2][1:]      # Remove 'k' prefix
+        pool_type = parts[3]      # maxpool or avgpool
+        return f"c={cache_val}, k={k_val}, {pool_type}"
     else:
         # For other techniques, format as "cache=X"
         return f"cache={cache_size.replace('cache_', '')}"
@@ -103,12 +128,24 @@ for i, perf_task in tqdm(enumerate(perf_tasks), desc='Processing tasks', total=l
         for (technique, model), group in subset.groupby(['technique', 'model']):
             # Sort by cache size if available
             if 'cache_size' in group.columns:
-                # Custom sorting for streamingllm
+                # Custom sorting for different techniques
                 if technique == "streamingllm":
                     # Extract n_local for sorting
                     group['sort_key'] = group['cache_size'].apply(
                         lambda x: int(x.split('_')[2]) if x.startswith('n_local_') else 0
                     )
+                    group = group.sort_values('sort_key')
+                    group = group.drop('sort_key', axis=1)
+                elif technique in ["snapkv", "pyramidkv"] and group['cache_size'].iloc[0].startswith('w32_c'):
+                    # For SnapKV/PyramidKV with format w32_c{cache}_k{k}_{pool}
+                    # Sort by cache size first, then by k value
+                    def extract_cache_and_k(cache_size):
+                        parts = cache_size.split('_')
+                        cache_val = int(parts[1][1:])  # Remove 'c' prefix and convert to int
+                        k_val = int(parts[2][1:])      # Remove 'k' prefix and convert to int
+                        return (cache_val, k_val)
+                    
+                    group['sort_key'] = group['cache_size'].apply(extract_cache_and_k)
                     group = group.sort_values('sort_key')
                     group = group.drop('sort_key', axis=1)
                 else:
