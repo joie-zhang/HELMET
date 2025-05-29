@@ -258,14 +258,14 @@ fig.legend(
     legend_labels,
     loc='center',
     ncol=len(legend_handles),
-    bbox_to_anchor=(0.5, 0.05),  # Changed from 0.02 to 0.05 to move legend up
+    bbox_to_anchor=(0.5, 0.05),
     bbox_transform=fig.transFigure,
     title='Legend',
     fontsize=10,
 )
 
 # Adjust the bottom margin in tight_layout
-plt.tight_layout(rect=[0, 0.06, 1, 0.98])  # Changed from [0, 0.08, 1, 0.98] to reduce bottom margin
+plt.tight_layout(rect=[0, 0.06, 1, 0.98])
 
 print("Saving plot...")
 # Save with a higher DPI to ensure legend is clear
