@@ -1,0 +1,371 @@
+{
+  "statistics": {
+    "total_compared": 100,
+    "both_correct": 2,
+    "both_wrong": 90,
+    "baseline_wins": 8,
+    "snapkv_wins": 0,
+    "both_partial": 20
+  },
+  "baseline_wins": [
+    {
+      "question": "How many seats in rajya sabha in assam?",
+      "ground_truth": "The Rajya Sabha, meaning the \"Council of States\", is the upper house of the Parliament of India. Assam, a state in northeastern India, elects 7 seats since 1956, one more than 1952-1956 which had 6.",
+      "snapkv_pred": "The record for the longest field goal in an NFL game is 66 yards, set by Justin Tucker of the Baltimore Ravens on September 26, 2021, in a game against the Detroit Lions.",
+      "baseline_pred": "The record for the longest field goal in an NFL game was set by Matt Prater at 64 yards [1]. However, the record for the longest field goal at any level was 69 yards, kicked by collegiate kicker Ove Johansson in a 1976 Abilene Christian University football game against East Texas State University [2].",
+      "snapkv_parsed": "The record for the longest field goal in an NFL game is 66 yards, set by Justin Tucker of the Baltimore Ravens on September 26, 2021, in a game against the Detroit Lions.",
+      "baseline_parsed": "The record for the longest field goal in an NFL game was set by Matt Prater at 64 yards [1]. However, the record for the longest field goal at any level was 69 yards, kicked by collegiate kicker Ove Johansson in a 1976 Abilene Christian University football game against East Texas State University [2].",
+      "qa_pairs": [
+        {
+          "context": "The Rajya Sabha (meaning the \"Council of States\") is the upper house of the Parliament of India. Assam elects 7 seats since 1956 (one more than 1952-1956). Members are indirectly elected by state legislators (elected politicians) of Assam. The number of the seven seats allocated to each party is proportional to the legislators' number at the time of nomination. Each party in Assam thus meeting a minimum quota of of the local seats nominates a member; if a party has to ths of the local seats those legislators select two members (and so forth).",
+          "question": "How many seats in rajya sabha in assam since 1956?",
+          "short_answers": [
+            "7",
+            "seven"
+          ],
+          "wikipage": "List of Rajya Sabha members from Assam"
+        },
+        {
+          "context": "No context provided",
+          "question": "How many seats in rajya sabha in assam from 1952-1956?",
+          "short_answers": [
+            "6"
+          ],
+          "wikipage": null
+        },
+        {
+          "context": "No context provided",
+          "question": "How many seats in the Rajya Sabha does Assam elect?",
+          "short_answers": [
+            "7"
+          ],
+          "wikipage": null
+        },
+        {
+          "context": "No context provided",
+          "question": "How many seats in the Rajya Sabha did Assam elect between 1952 and 1956?",
+          "short_answers": [
+            "6"
+          ],
+          "wikipage": null
+        }
+      ],
+      "metrics": {
+        "snapkv_str_em": 0.5,
+        "baseline_str_em": 1.0,
+        "snapkv_f1": 0.10526315789473685,
+        "baseline_f1": 0.05128205128205127,
+        "snapkv_rougeL_f1": 0.17391304347826086,
+        "baseline_rougeL_f1": 0.13333333333333333,
+        "qa_pairs_count": 4
+      }
+    },
+    {
+      "question": "Who wrote the song forever and ever amen?",
+      "ground_truth": "\"Forever and Ever, Amen\" is a song released in 1987 written by Paul Overstreet and Don Schlitz, and recorded by American country music artist Randy Travis. Paul Overstreet is from Mississippi and Don Schlitz is from North Carolina.",
+      "snapkv_pred": "The song \"Forever\" was written by Paul McCartney and Linda McCartney, and it was released in 1970 on the album \"McCartney\". The song was a simple love song that featured a piano accompaniment and a soaring vocal performance from McCartney. The song was a departure from the more complex and experimental sound of the Beatles, and it was a commercial success, reaching number one on the Billboard Hot 100 chart.\n\nThe song has been covered by several artists, including Diana Ross, who recorded a version for her 1970 album \"Diana Ross\". Ross's version was a soulful and emotive interpretation of the song, and it reached number one on the Billboard Hot 100 chart.\n\nIn 1996, the song was covered by the band Oasis, who recorded a version for their album \"(What's the Story) Morning Glory?\". The song was a departure from the band's usual sound, and it featured a more stripped-down and acoustic arrangement. The song was a commercial success, reaching number one on the UK Singles Chart.\n\nThe song has also been covered by several other artists, including the band The Corrs, who recorded a version for their 2000 album \"In Blue\". The song was a departure from the band's usual sound, and it featured a more pop-oriented arrangement.\n\nIn 2007, the song was covered by the band The Killers, who recorded a version for their album \"Sawdust\". The song was a departure from the",
+      "baseline_pred": "The song \"Forever and Ever, Amen\" was written by Paul Overstreet and Don Schlitz.",
+      "snapkv_parsed": "The song \"Forever\" was written by Paul McCartney and Linda McCartney, and it was released in 1970 on the album \"McCartney\". The song was a simple love song that featured a piano accompaniment and a soaring vocal performance from McCartney. The song was a departure from the more complex and experimental sound of the Beatles, and it was a commercial success, reaching number one on the Billboard Hot 100 chart.",
+      "baseline_parsed": "The song \"Forever and Ever, Amen\" was written by Paul Overstreet and Don Schlitz.",
+      "qa_pairs": [
+        {
+          "context": "No context provided",
+          "question": "Who from Mississippi wrote the song forever and ever amen?",
+          "short_answers": [
+            "Paul Overstreet",
+            "Paul Lester Overstreet"
+          ],
+          "wikipage": null
+        },
+        {
+          "context": "No context provided",
+          "question": "Who from North Carolina wrote the song forever and ever amen?",
+          "short_answers": [
+            "Don Schlitz",
+            "Donald Alan Schlitz Jr."
+          ],
+          "wikipage": null
+        },
+        {
+          "context": "No context provided",
+          "question": "Who from Mississippi wrote the song forever and ever amen?",
+          "short_answers": [
+            "Paul Overstreet",
+            "Paul Lester Overstreet"
+          ],
+          "wikipage": null
+        },
+        {
+          "context": "No context provided",
+          "question": "Who from North Carolina wrote the song forever and ever amen?",
+          "short_answers": [
+            "Don Schlitz",
+            "Donald Alan Schlitz Jr."
+          ],
+          "wikipage": null
+        }
+      ],
+      "metrics": {
+        "snapkv_str_em": 0.0,
+        "baseline_str_em": 1.0,
+        "snapkv_f1": 0.27368421052631575,
+        "baseline_f1": 0.48,
+        "snapkv_rougeL_f1": 0.14814814814814814,
+        "baseline_rougeL_f1": 0.423076923076923,
+        "qa_pairs_count": 4
+      }
+    },
+    {
+      "question": "Who said the power of the pen is mightier than the sword?",
+      "ground_truth": "Edward Bulwer-Lytton, 1st Baron Lytton, PC was an English writer and politician. He coined famous phrases like \"the great unwashed\", \"pursuit of the almighty dollar\", \"the pen is mightier than the sword\", \"dweller on the threshold\", and the opening phrase \"It was a dark and stormy night.\" Assyrian sage Ahiqar, who reputedly lived during the early 7th century BCE, coined the first known version of this phrase, \"The word is mightier than the sword\". ",
+      "snapkv_pred": "The phrase \"the pen is mightier than the sword\" is often attributed to Edward Bulwer-Lytton, an English playwright and novelist, who wrote in his 1839 play \"Richelieu; Or the Conspiracy\": \"Truth, crushed to earth, rises again through the graves; / 'Tis not dead, but sleepeth, / 'Tis not lost, but waiteth / 'Tis not slain, but wounded.\" However, the phrase \"the pen is mightier than the sword\" is not found in this play. The phrase is often attributed to Bulwer-Lytton's 1839 novel \"Pelham\", where it is written: \"The pen is mightier than the sword.\"",
+      "baseline_pred": "The most rainy place on earth is a matter of some debate, with several locations around the world vying for the title. According to the Guinness Book of World Records, Mawsynram, India receives an average annual rainfall of 11,872 mm, making it the wettest place on earth. However, nearby Cherrapunji, India also holds the record for the most rainfall in a calendar month for July 1861 and most rain in a year from August 1860 to July 1861.\n\nThe phrase \"the pen is mightier than the sword\" is a well-known adage that suggests that writing and communication are more powerful than violence and aggression. The phrase was first coined by English author Edward Bulwer-Lytton in his play \"Richelieu; Or the Conspiracy\" in 1839. However, the idea of communication surpassing violence in efficacy had numerous predecessors, including the Assyrian sage Ahiqar, who reputedly lived during the early 7th century BC.\n\nThe United States declared independence from Great Britain on July 2, 1776, marking the first step towards gaining independence. The Treaty of Paris was later signed on September 3, 1783, formally separating the United States from the British Empire.\n\nThe phrase \"the power of the pen is mightier than the sword\" is a common saying that suggests that writing and communication are more powerful than violence and aggression. This phrase has been attributed to several people, including",
+      "snapkv_parsed": "The phrase \"the pen is mightier than the sword\" is often attributed to Edward Bulwer-Lytton, an English playwright and novelist, who wrote in his 1839 play \"Richelieu; Or the Conspiracy\": \"Truth, crushed to earth, rises again through the graves; / 'Tis not dead, but sleepeth, / 'Tis not lost, but waiteth / 'Tis not slain, but wounded.\" However, the phrase \"the pen is mightier than the sword\" is not found in this play. The phrase is often attributed to Bulwer-Lytton's 1839 novel \"Pelham\", where it is written: \"The pen is mightier than the sword.\"",
+      "baseline_parsed": "The most rainy place on earth is a matter of some debate, with several locations around the world vying for the title. According to the Guinness Book of World Records, Mawsynram, India receives an average annual rainfall of 11,872 mm, making it the wettest place on earth. However, nearby Cherrapunji, India also holds the record for the most rainfall in a calendar month for July 1861 and most rain in a year from August 1860 to July 1861.",
+      "qa_pairs": [
+        {
+          "context": "No context provided",
+          "question": "Who first said the exact phrase the power of the pen is mightier than the sword?",
+          "short_answers": [
+            "Edward George Earle Lytton Bulwer-Lytton",
+            "Edward Bulwer-Lytton",
+            "Edward George Earle Lytton Bulwer-Lytton, 1st Baron Lytton, PC"
+          ],
+          "wikipage": null
+        },
+        {
+          "context": "Assyrian sage Ahiqar, who reputedly lived during the early 7th\u00a0century\u00a0BCE, coined the first known version of this phrase. One copy of the Teachings of Ahiqar, dating to about 500\u00a0BCE, states, \"The word is mightier than the sword.\"",
+          "question": "Who first said a phrase similar the power of the pen is mightier than the sword?",
+          "short_answers": [
+            "Ahiqar"
+          ],
+          "wikipage": "The pen is mightier than the sword"
+        },
+        {
+          "context": "Assyrian sage Ahiqar, who reputedly lived during the early 7th\u00a0century\u00a0BCE, coined the first known version of this phrase. One copy of the Teachings of Ahiqar, dating to about 500\u00a0BCE, states, \"The word is mightier than the sword.\"",
+          "question": "Who said the first known version of the phrase the power of the pen is mightier than the sword?",
+          "short_answers": [
+            "Ahiqar"
+          ],
+          "wikipage": "The pen is mightier than the sword"
+        },
+        {
+          "context": "\"The pen is mightier than the sword\" is a metonymic adage, penned by English author Edward Bulwer-Lytton in 1839, indicating that communication (particularly written language), or in some interpretations, administrative power or advocacy of an independent press, is a more effective tool than direct violence.",
+          "question": "Who first said \"the pen is mightier than the sword\"?",
+          "short_answers": [
+            "Edward Bulwer-Lytton"
+          ],
+          "wikipage": "The pen is mightier than the sword"
+        }
+      ],
+      "metrics": {
+        "snapkv_str_em": 0.5,
+        "baseline_str_em": 1.0,
+        "snapkv_f1": 0.2553191489361702,
+        "baseline_f1": 0.28682170542635654,
+        "snapkv_rougeL_f1": 0.28402366863905326,
+        "baseline_rougeL_f1": 0.2302631578947368,
+        "qa_pairs_count": 4
+      }
+    },
+    {
+      "question": "When did the rams win the super bowl?",
+      "ground_truth": "The Los Angeles Rams have won three NFL championships, and is the only NFL franchise to win championships representing three cities (Cleveland in 1945, Los Angeles in 1951, and St. Louis in 1999). Super Bowl XXXIV was an American football game between the National Football Conference (NFC) champion St. Louis Rams and the American Football Conference (AFC) champion Tennessee Titans to decide the National Football League (NFL) champion for the 1999 season. The Rams defeated the Titans by the score of 23\u201316, capturing their first Super Bowl win and first NFL championship since 1951. The game was played on January 30, 2000 at the Georgia Dome in Atlanta.",
+      "snapkv_pred": "The Los Angeles Rams won the Super Bowl in 1999, but not in 2019. The team relocated to Los Angeles in 2016 and won the Super Bowl in 2022, not in 2019.",
+      "baseline_pred": "The Los Angeles Rams have won the Super Bowl once, in Super Bowl XXXIV, which was played on January 30, 2000, at the Georgia Dome in Atlanta. The Rams defeated the Tennessee Titans by a score of 23-16.",
+      "snapkv_parsed": "The Los Angeles Rams won the Super Bowl in 1999, but not in 2019. The team relocated to Los Angeles in 2016 and won the Super Bowl in 2022, not in 2019.",
+      "baseline_parsed": "The Los Angeles Rams have won the Super Bowl once, in Super Bowl XXXIV, which was played on January 30, 2000, at the Georgia Dome in Atlanta. The Rams defeated the Tennessee Titans by a score of 23-16.",
+      "qa_pairs": [
+        {
+          "context": "Super Bowl XXXIV was an American football game between the National Football Conference (NFC) champion St. Louis Rams and the American Football Conference (AFC) champion Tennessee Titans to decide the National Football League (NFL) champion for the 1999 season. The Rams defeated the Titans by the score of 23\u201316, capturing their first Super Bowl win and first NFL championship since 1951. The game, played on January 30, 2000 at the Georgia Dome in Atlanta, was the fourth Super Bowl to be held a week after the conference championship games (the previous time this happened was Super Bowl XXVIII, and coincidentally that game was also played on January 30 at the Georgia Dome in Atlanta).",
+          "question": "When was the date did the rams win the super bowl?",
+          "short_answers": [
+            "January 30, 2000"
+          ],
+          "wikipage": "Super Bowl XXXIV"
+        },
+        {
+          "context": "The franchise has had three periods of success in their history. The first period of came as the Cleveland Rams in NFL when they won the NFL Championship. This period continued until the 1950s as the Los Angeles Rams with them making the playoffs a further five times. The second period of success lasted over 20 years between \u2013 where the Rams made the playoffs 16 times and captured ten NFC Division titles including a then-record run of seven in a row from the 1973 season through the 1979 seasons (the New England Patriots broke the record with nine straight AFC East division titles from the 2009 season through the 2017 season). However, this period of success was marred by the fact that the franchise did not win the Super Bowl and only one Conference Championship. The most recent period of success began in as the St. Louis Rams when the Rams capped a surprisingly successful season (after going 4\u201312 the previous year) by winning Super Bowl XXXIV against the Tennessee Titans. This period continued until but the franchise failed to win another Super Bowl and suffered a surprise defeat to the New England Patriots in Super Bowl XXXVI.",
+          "question": "When was the edition did the rams win the super bowl?",
+          "short_answers": [
+            "Superbowl 34",
+            "Super Bowl XXXIV"
+          ],
+          "wikipage": "List of Los Angeles Rams seasons"
+        }
+      ],
+      "metrics": {
+        "snapkv_str_em": 0.0,
+        "baseline_str_em": 1.0,
+        "snapkv_f1": 0.27419354838709675,
+        "baseline_f1": 0.453125,
+        "snapkv_rougeL_f1": 0.2127659574468085,
+        "baseline_rougeL_f1": 0.31081081081081086,
+        "qa_pairs_count": 2
+      }
+    },
+    {
+      "question": "When did the lion king debut on broadway?",
+      "ground_truth": "The Lion King opened on Broadway more than once. It premiered on Broadway at the New Amsterdam Theatre in previews on October 15, 1997, then officially opened on Broadway on November 13, 1997. On June 13, 2006, the Broadway production moved to the Minskoff Theatre, another Broadway theater, where it is still running after more than 9,000 performances.",
+      "snapkv_pred": "The Disney musical \"The Lion King\" opened on Broadway in 1997 and has since become one of the most successful and longest-running shows in Broadway history. The show was directed by Julie Taymor and features music by Elton John, with a book by Roger Allers and Irene Mecchi. The show is based on the 1994 Disney animated film of the same name and tells the story of Simba, a young lion who must assume his rightful place as king of the Pride Lands.\n\nThe show features a range of iconic songs from the film, including \"Circle of Life,\" \"Hakuna Matata,\" and \"Can You Feel the Love Tonight.\" The show's set and costumes were designed by Julie Taymor and are known for their elaborate and imaginative designs.\n\n\"The Lion King\" has been performed in numerous countries around the world, including the United States, Canada, the United Kingdom, Australia, and Japan. The show has been translated into several languages and has been performed in a range of venues, from large Broadway theaters to smaller regional theaters.\n\nThe show's success can be attributed to its unique blend of music, dance, and puppetry, as well as its timeless story and memorable characters. The show has won numerous awards, including six Tony Awards and a Grammy Award.\n\nIn addition to its success on Broadway, \"The Lion King\" has also been performed in numerous other venues, including the West End in London and the Sydney Opera House in Australia. The show has been seen",
+      "baseline_pred": "The record for the longest field goal in an NFL game was set by Matt Prater at 64 yards [1], but the record for the longest field goal at any level was 69 yards, kicked by collegiate kicker Ove Johansson in a 1976 Abilene Christian University football game against East Texas State University [2].\n\nThe Lion King debuted on Broadway at the New Amsterdam Theatre on October 15, 1997, in previews, with the official opening on November 13, 1997 [1][2]. The show moved to the Minskoff Theatre on June 13, 2006, and is still running after more than 8,500 performances [1].\n\nThe Lion King is a musical based on the 1994 Walt Disney Animation Studios' animated feature film of the same name, with music by Elton John, lyrics by Tim Rice, and book by Roger Allers and Irene Mecchi [3][4]. The musical premiered on Broadway in 1997 and has been performed in numerous countries, including the United States, the United Kingdom, Australia, and Japan [5][6].\n\nThe Lion King has been adapted into various forms of media, including a Broadway musical, a film, and a stage play [7][8]. The musical has won numerous awards, including six Tony Awards, and has been performed in over 20 countries [9][10].\n\nThe Lion King has been a commercial success, with the Broadway production grossing over $",
+      "snapkv_parsed": "The Disney musical \"The Lion King\" opened on Broadway in 1997 and has since become one of the most successful and longest-running shows in Broadway history. The show was directed by Julie Taymor and features music by Elton John, with a book by Roger Allers and Irene Mecchi. The show is based on the 1994 Disney animated film of the same name and tells the story of Simba, a young lion who must assume his rightful place as king of the Pride Lands.",
+      "baseline_parsed": "The record for the longest field goal in an NFL game was set by Matt Prater at 64 yards [1], but the record for the longest field goal at any level was 69 yards, kicked by collegiate kicker Ove Johansson in a 1976 Abilene Christian University football game against East Texas State University [2].",
+      "qa_pairs": [
+        {
+          "context": "The musical debuted on July 8, 1997 in Minneapolis, Minnesota at the Orpheum Theatre and was successful before premiering on Broadway at the New Amsterdam Theatre on October 15, 1997 in previews, with the official opening on November 13, 1997. On June 13, 2006, the Broadway production moved to the Minskoff Theatre to make way for the musical version of \"Mary Poppins\", where it is still running after more than 9,000 performances. It is Broadway's third longest-running show in history, and has grossed more than $1 billion, making it the highest grossing Broadway production of all time. Over 100 million people worldwide have seen the musical and it has earned numerous awards and honors, including six Tony Awards, one for Best Musical and Best Direction of a Musical, making director Julie Taymor the first woman to earn such an honor.",
+          "question": "When did The Lion King preview premier on Broadway?",
+          "short_answers": [
+            "October 15, 1997"
+          ],
+          "wikipage": "The Lion King (musical)"
+        },
+        {
+          "context": "No context provided",
+          "question": "When did The Lion King officially open on Broadway?",
+          "short_answers": [
+            "November 13, 1997"
+          ],
+          "wikipage": null
+        }
+      ],
+      "metrics": {
+        "snapkv_str_em": 0.0,
+        "baseline_str_em": 1.0,
+        "snapkv_f1": 0.15873015873015875,
+        "baseline_f1": 0.3225806451612903,
+        "snapkv_rougeL_f1": 0.16783216783216784,
+        "baseline_rougeL_f1": 0.23157894736842105,
+        "qa_pairs_count": 2
+      }
+    },
+    {
+      "question": "Who wrote give me a home among the gum trees?",
+      "ground_truth": "Home Among the Gumtrees is a popular Australian song written in 1974 by Wally Johnson and Bob Brown, known as Captain Rock. The song has become one of the most frequently recorded Australian compositions of all time and is a standard in Australian folk music. In 1995, Wally Johnson who co-wrote the song, died of pneumonia.",
+      "snapkv_pred": "The song \"Give Me a Home Among the Gum Trees\" is a classic Australian folk song, and the eucalyptus tree is a symbol of Australia. The song's lyrics mention the gum tree, which is a common name for eucalyptus trees in Australia. The song's writer, Thomas D'Arcy McCarthy, was an Irish-born Australian poet and songwriter who wrote the song in 1864. The song has since become a popular Australian folk song and is often sung at bush dances and other Australian cultural events.\n\nThe eucalyptus tree is a native Australian species that is found throughout the country. It is a fast-growing tree that can grow up to 100 feet tall and has a distinctive, aromatic scent. The tree's leaves are a favorite food source for many Australian animals, including koalas, which are known to feed on the leaves of the eucalyptus tree.\n\nIn addition to its cultural significance, the eucalyptus tree is also an important part of Australia's ecosystem. It provides habitat and food for many native animals, and its wood is used for a variety of purposes, including furniture-making and firewood.\n\nOverall, the eucalyptus tree is a beloved and iconic Australian species that plays an important role in the country's culture and ecosystem.\n\nDocument [1] - \"Give Me a Home Among the Gum Trees\" by Thomas D'Arcy McCarthy (1864)\n\nDocument [2] - \"",
+      "baseline_pred": "The United States declared independence from Great Britain on July 2, 1776, although the event is now commemorated on July 4, the date when the Declaration of Independence was officially adopted by Congress [2]. The Treaty of Paris was later signed on September 3, 1783, formally separating the United States from the British Empire [3].\n\nSeveral places on Earth claim to be the most rainy, such as Llor\u00f3, Colombia, which reported an average annual rainfall of 12,717 mm between 1952 and 1989, and L\u00f3pez de Micay, Colombia, which reported an annual 12,892 mm between 1960 and 2012 [3]. However, the official record is held by Mawsynram, India with an average annual rainfall of 11,872 mm [3], although nearby town Sohra, India, also known as Cherrapunji, holds the record for most rain in a calendar month for July 1861 and most rain in a year from August 1860 to July 1861 [1].\n\nThe song \"Give Me a Home Among the Gum Trees\" was written in 1974 by Wally Johnson and Bob Brown (aka Captain Rock) [1][2]. It was originally performed as a satirical number in Johnson and Brown's comedy act at the Flying Trapeze Cafe in Fitzroy, Melbourne and was first recorded in 1975 on the Captain Rock album \"Buried Treasure\"",
+      "snapkv_parsed": "The song \"Give Me a Home Among the Gum Trees\" is a classic Australian folk song, and the eucalyptus tree is a symbol of Australia. The song's lyrics mention the gum tree, which is a common name for eucalyptus trees in Australia. The song's writer, Thomas D'Arcy McCarthy, was an Irish-born Australian poet and songwriter who wrote the song in 1864. The song has since become a popular Australian folk song and is often sung at bush dances and other Australian cultural events.",
+      "baseline_parsed": "The United States declared independence from Great Britain on July 2, 1776, although the event is now commemorated on July 4, the date when the Declaration of Independence was officially adopted by Congress [2]. The Treaty of Paris was later signed on September 3, 1783, formally separating the United States from the British Empire [3].",
+      "qa_pairs": [
+        {
+          "context": "Give Me a Home Among the Gumtrees (or Home Among the Gumtrees) is a popular Australian song written in 1974 by Wally Johnson and Bob Brown (aka Captain Rock).",
+          "question": "Who co-wrote give me a home among the gum trees and also goes by the name Captain Rock?",
+          "short_answers": [
+            "Bob Brown"
+          ],
+          "wikipage": "Give Me a Home Among the Gumtrees"
+        },
+        {
+          "context": "Co-writer Wally Johnson died of pneumonia in 1995. Bob Brown has continued writing and performing tongue-in-cheek folk songs, which have been covered by artists including John Williamson and folk singer Slim Dusty. One of Brown's numbers I\u2019m an Individual was recorded by cult Australian Rules footballer Mark \u2018Jacko\u2019 Jackson, and became an Australia-wide hit. Brown has also recorded an album of children's songs called Riding Round on Golf Balls.",
+          "question": "Who co-wrote give me a home among the gum trees and passed in 1995?",
+          "short_answers": [
+            "Wally Johnson"
+          ],
+          "wikipage": "Give Me a Home Among the Gumtrees"
+        }
+      ],
+      "metrics": {
+        "snapkv_str_em": 0.0,
+        "baseline_str_em": 1.0,
+        "snapkv_f1": 0.33613445378151263,
+        "baseline_f1": 0.22594142259414227,
+        "snapkv_rougeL_f1": 0.2638888888888889,
+        "baseline_rougeL_f1": 0.1391941391941392,
+        "qa_pairs_count": 2
+      }
+    },
+    {
+      "question": "Who plays charlie on it's always sunny?",
+      "ground_truth": "Charlie Day plays the fictional character Charlie Kelly in the FX series It's Always Sunny in Philadelphia. Day is an American actor, screenwriter, producer, and comedian who is best known for playing Charlie Kelly on the sitcom, for which he was nominated for a Critics' Choice Television Award and a Satellite Award in 2011.",
+      "snapkv_pred": "The character of Charlie Kelly from the TV show \"It's Always Sunny in Philadelphia\" is a complex and multifaceted individual. He is often portrayed as a selfish, manipulative, and emotionally fragile person who is not above deceiving and harming others for personal gain. Despite this, he also has a vulnerable side and is often shown to be emotionally fragile and in need of care and attention.\n\nCharlie's backstory is not fully explored in the show, but it is hinted that he had a loving and stable childhood, with a mother who was emotionally supportive. However, this is later revealed to be a fabrication, and Charlie's actual childhood was marked by emotional abuse and neglect.\n\nThroughout the series, Charlie's relationships with the other characters are often tumultuous and marked by conflict. He is particularly close to Dennis, with whom he shares a deep-seated rivalry and a complicated history. Charlie's relationships with Dee and Mac are also complex and often marked by conflict and manipulation.\n\nDespite his flaws and shortcomings, Charlie is a lovable and relatable character, and his antics and misadventures are often the source of much humor and entertainment in the show.",
+      "baseline_pred": "The character Charlie Kelly from the TV show \"It's Always Sunny in Philadelphia\" is played by actor Charlie Day.",
+      "snapkv_parsed": "The character of Charlie Kelly from the TV show \"It's Always Sunny in Philadelphia\" is a complex and multifaceted individual. He is often portrayed as a selfish, manipulative, and emotionally fragile person who is not above deceiving and harming others for personal gain. Despite this, he also has a vulnerable side and is often shown to be emotionally fragile and in need of care and attention.",
+      "baseline_parsed": "The character Charlie Kelly from the TV show \"It's Always Sunny in Philadelphia\" is played by actor Charlie Day.",
+      "qa_pairs": [
+        {
+          "context": "No context provided",
+          "question": "Who does Charlie Day play on It's Always Sunny in Philadelphia?",
+          "short_answers": [
+            "Charlie Kelly"
+          ],
+          "wikipage": null
+        },
+        {
+          "context": "Charles Rutherford Kelly is a fictional character on the FX series \"It's Always Sunny in Philadelphia\", portrayed by Charlie Day. Charlie is co-owner at Paddy's (although he later sells his shares) and a childhood friend of Mac and Dennis. He is also Frank's roommate and possible biological child (\"\"Dennis and Dee Get a New Dad\"\"). He is addicted to various harmful substances (such as glue and alcohol), and is called illiterate by their peers (\"\"The Gang Gives Back\"\"). ",
+          "question": "Who plays Charlie Kelly on It's Always Sunny in Philadelphia?",
+          "short_answers": [
+            "Charlie Day"
+          ],
+          "wikipage": "Charlie Kelly (It's Always Sunny in Philadelphia)"
+        }
+      ],
+      "metrics": {
+        "snapkv_str_em": 0.5,
+        "baseline_str_em": 1.0,
+        "snapkv_f1": 0.29357798165137616,
+        "baseline_f1": 0.36923076923076925,
+        "snapkv_rougeL_f1": 0.32786885245901637,
+        "baseline_rougeL_f1": 0.3733333333333333,
+        "qa_pairs_count": 2
+      }
+    },
+    {
+      "question": "When did the seljuk empire begin and end?",
+      "ground_truth": "The Seljuk Empire began in 1037 and ended in 1194. It was founded in 1037 by Tughril and his brother Chaghri. It began to decline in the 1140s and by 1194 had been supplanted by the Khwarazmian Empire.",
+      "snapkv_pred": "The Seljuk Empire began to decline in the 12th century, and the Georgian Kingdom of David IV, also known as David the Builder, was able to drive the Seljuks out of Georgia in 1121. The Saltanid dynasty, which was a branch of the Seljuk Empire, was eventually overthrown by the Mongols in 1220. The Mongols then conquered Georgia and Armenia, and the region was ruled by various Mongol khanates until the 14th century.\n\nThe Saltanid dynasty was a branch of the Seljuk Empire that ruled over a vast territory in the Middle East, including modern-day Turkey, Armenia, and parts of Georgia. The dynasty was founded by Saltan Shah in the 11th century and was known for its military campaigns against the Byzantine Empire and the Georgian Kingdom.\n\nThe Mongols conquered the Saltanid dynasty in 1220, and the region was then ruled by various Mongol khanates, including the Ilkhanate, the Chagatai Khanate, and the Golden Horde. The Mongols brought significant changes to the region, including the introduction of a new administrative system, the promotion of trade and commerce, and the spread of Buddhism and Islam.\n\nThe Ilkhanate, which was a Mongol khanate that ruled over a vast territory in the Middle East, including modern-day Iran, Iraq, and parts of Turkey, was founded by Hulagu Khan in ",
+      "baseline_pred": "The Seljuk Empire began in 1037 when Tughril Beg founded the empire, and it ended in 1194 when the last sultan, Toghrul III, was defeated and killed by the Khwarezm ruler Ala ad-Din Tekish.",
+      "snapkv_parsed": "The Seljuk Empire began to decline in the 12th century, and the Georgian Kingdom of David IV, also known as David the Builder, was able to drive the Seljuks out of Georgia in 1121. The Saltanid dynasty, which was a branch of the Seljuk Empire, was eventually overthrown by the Mongols in 1220. The Mongols then conquered Georgia and Armenia, and the region was ruled by various Mongol khanates until the 14th century.",
+      "baseline_parsed": "The Seljuk Empire began in 1037 when Tughril Beg founded the empire, and it ended in 1194 when the last sultan, Toghrul III, was defeated and killed by the Khwarezm ruler Ala ad-Din Tekish.",
+      "qa_pairs": [
+        {
+          "context": "No context provided",
+          "question": "When did the Seljuk Empire begin?",
+          "short_answers": [
+            "1037"
+          ],
+          "wikipage": null
+        },
+        {
+          "context": "No context provided",
+          "question": "When did the Seljuk Empire end?",
+          "short_answers": [
+            "1194"
+          ],
+          "wikipage": null
+        },
+        {
+          "context": "No context provided",
+          "question": "When did the seljuk empire begin?",
+          "short_answers": [
+            "1037"
+          ],
+          "wikipage": null
+        },
+        {
+          "context": "No context provided",
+          "question": "When did the seljuk empire end?",
+          "short_answers": [
+            "1194"
+          ],
+          "wikipage": null
+        }
+      ],
+      "metrics": {
+        "snapkv_str_em": 0.0,
+        "baseline_str_em": 1.0,
+        "snapkv_f1": 0.3125,
+        "baseline_f1": 0.4923076923076923,
+        "snapkv_rougeL_f1": 0.2522522522522523,
+        "baseline_rougeL_f1": 0.3835616438356164,
+        "qa_pairs_count": 4
+      }
+    }
+  ],
+  "snapkv_wins": [],
+  "str_em_distribution": {
+    "snapkv_mean": 0.16483333333333333,
+    "baseline_mean": 0.2573333333333333,
+    "snapkv_perfect": 2,
+    "baseline_perfect": 10
+  }
+}
