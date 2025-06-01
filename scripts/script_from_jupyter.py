@@ -11,10 +11,28 @@ longproc_memory_df = pd.read_csv('/scratch/gpfs/DANQIC/jz4391/HELMET/results/lon
 longproc_throughput_df = pd.read_csv('/scratch/gpfs/DANQIC/jz4391/HELMET/results/longproc_results/longproc_throughput.csv')
 longproc_performance_df = pd.read_csv('/scratch/gpfs/DANQIC/jz4391/HELMET/results/longproc_results/longproc_performance.csv')
 
-# Filter out the 'quest' technique
-longproc_memory_df = longproc_memory_df[longproc_memory_df['technique'] != 'quest']
-longproc_throughput_df = longproc_throughput_df[longproc_throughput_df['technique'] != 'quest']
-longproc_performance_df = longproc_performance_df[longproc_performance_df['technique'] != 'quest']
+# Filter out the 'quest' and 'streamingllm_original' techniques
+longproc_memory_df = longproc_memory_df[~longproc_memory_df['technique'].isin(['quest', 'streamingllm_original'])]
+longproc_throughput_df = longproc_throughput_df[~longproc_throughput_df['technique'].isin(['quest', 'streamingllm_original'])]
+longproc_performance_df = longproc_performance_df[~longproc_performance_df['technique'].isin(['quest', 'streamingllm_original'])]
+
+# Filter out specific unwanted cache size configurations
+unwanted_configs = [
+    ('pyramidkv', 'w32_c4096_k5_avgpool'),
+    ('snapkv', 'w32_c4096_k5_avgpool'), 
+    ('streamingllm', 'n_local_3968_n_init_128')
+]
+
+# Apply filters to all dataframes
+for technique, cache_size in unwanted_configs:
+    condition = (longproc_memory_df['technique'] == technique) & (longproc_memory_df['cache_size'] == cache_size)
+    longproc_memory_df = longproc_memory_df[~condition]
+    
+    condition = (longproc_throughput_df['technique'] == technique) & (longproc_throughput_df['cache_size'] == cache_size)
+    longproc_throughput_df = longproc_throughput_df[~condition]
+    
+    condition = (longproc_performance_df['technique'] == technique) & (longproc_performance_df['cache_size'] == cache_size)
+    longproc_performance_df = longproc_performance_df[~condition]
 
 # Create output directory for plots
 plots_dir = '/scratch/gpfs/DANQIC/jz4391/HELMET/results/plots'
@@ -33,6 +51,13 @@ def format_cache_size(cache_size: str) -> str:
         n_local = parts[2]
         n_init = parts[5]
         return f"n_local={n_local}, n_init={n_init}"
+    elif cache_size.startswith("w32_c") and "_k" in cache_size:
+        # For SnapKV and PyramidKV with format w32_c{cache}_k{k}_{pool}
+        parts = cache_size.split('_')
+        cache_val = parts[1][1:]  # Remove 'c' prefix
+        k_val = parts[2][1:]      # Remove 'k' prefix
+        pool_type = parts[3]      # maxpool or avgpool
+        return f"c={cache_val}, k={k_val}, {pool_type}"
     else:
         # For other techniques, format as "cache=X"
         return f"cache={cache_size.replace('cache_', '')}"
@@ -50,7 +75,7 @@ marker_dict = {
     'pyramidkv':    'P',
     'snapkv':       'X',
     'streamingllm': '*',
-    'streamingllm_original': '8',
+    # 'streamingllm_original': '8',
 }
 
 # Add marker size dictionary to compensate for visual differences
@@ -62,20 +87,20 @@ marker_size_dict = {
     'P': 120,  # pyramidkv - slightly larger
     'X': 120,  # snapkv - slightly larger
     '*': 200,  # streamingllm - make stars bigger
-    '8': 85,   # streamingllm_original - make octagons smaller
+    # '8': 85,   # streamingllm_original - make octagons smaller
 }
 
 # --- Unified 3×4 grid for LongProc Memory/Throughput vs Performance ---
 perf_tasks = ['html_to_tsv', 'pseudo_to_code', 'travel_planning']
-contexts = ['2k', '5k', '8k']  # Updated to include 8k
+contexts = ['5k', '2k', '8k']  # Updated to include 8k
 
 fig, axes = plt.subplots(
-    nrows=len(perf_tasks),
+    nrows=len(perf_tasks) + 1,  # Changed from 3 to 4 to add average row
     ncols=6,  # Changed from 4 to 6 to accommodate 8k
-    figsize=(30, 12),  # Increased figure width
+    figsize=(30, 16),  # Increased figure height for extra row
 )
 
-for i, task in tqdm(enumerate(perf_tasks), desc='Processing tasks', total=len(perf_tasks)):
+for i, task in tqdm(enumerate(perf_tasks + ['average']), desc='Processing tasks', total=len(perf_tasks) + 1):  # Added 'average'
     for j in tqdm(range(6), desc=f'Processing plots for {task}', leave=False):  # Changed from 4 to 6
         ax = axes[i, j]
         if j < 3:  # Changed from 2 to 3
@@ -87,11 +112,11 @@ for i, task in tqdm(enumerate(perf_tasks), desc='Processing tasks', total=len(pe
             context = contexts[j - 3]  # Changed from j - 2 to j - 3
             # Calculate latency as 1/throughput with zero handling
             df = df.copy()  # Create a copy to avoid modifying the original
-            for task in perf_tasks:
+            for task_col in perf_tasks:
                 # Replace 0 with NaN to avoid division by zero
-                df[task] = df[task].replace(0, float('nan'))
+                df[task_col] = df[task_col].replace(0.0, float('nan'))
                 # Convert non-zero throughput to latency
-                df[task] = 1 / df[task]
+                df[task_col] = 1 / df[task_col]
             x_label = 'Latency (s/sample)'
 
         # Group data by technique and model
@@ -99,12 +124,24 @@ for i, task in tqdm(enumerate(perf_tasks), desc='Processing tasks', total=len(pe
         for (technique, model), group in subset.groupby(['technique', 'model']):
             # Sort by cache size if available
             if 'cache_size' in group.columns:
-                # Custom sorting for streamingllm
+                # Custom sorting for different techniques
                 if technique == "streamingllm":
                     # Extract n_local for sorting
                     group['sort_key'] = group['cache_size'].apply(
                         lambda x: int(x.split('_')[2]) if x.startswith('n_local_') else 0
                     )
+                    group = group.sort_values('sort_key')
+                    group = group.drop('sort_key', axis=1)
+                elif technique in ["snapkv", "pyramidkv"] and group['cache_size'].iloc[0].startswith('w32_c'):
+                    # For SnapKV/PyramidKV with format w32_c{cache}_k{k}_{pool}
+                    # Sort by cache size first, then by k value
+                    def extract_cache_and_k(cache_size):
+                        parts = cache_size.split('_')
+                        cache_val = int(parts[1][1:])  # Remove 'c' prefix and convert to int
+                        k_val = int(parts[2][1:])      # Remove 'k' prefix and convert to int
+                        return (cache_val, k_val)
+                    
+                    group['sort_key'] = group['cache_size'].apply(extract_cache_and_k)
                     group = group.sort_values('sort_key')
                     group = group.drop('sort_key', axis=1)
                 else:
@@ -119,7 +156,7 @@ for i, task in tqdm(enumerate(perf_tasks), desc='Processing tasks', total=len(pe
             y_values = []
             
             for _, row in group.iterrows():
-                x = row[task]
+                x = row[task] if task != 'average' else row[perf_tasks].mean()  # Use average for bottom row
                 perf_row = longproc_performance_df[
                     (longproc_performance_df['technique'] == row['technique']) &
                     (longproc_performance_df['context_length'] == context) &
@@ -128,7 +165,13 @@ for i, task in tqdm(enumerate(perf_tasks), desc='Processing tasks', total=len(pe
                 ]
                 if perf_row.empty or pd.isna(x):
                     continue
-                y = perf_row.iloc[0][task]
+                
+                # Calculate y value (performance)
+                if task == 'average':
+                    # For average row, calculate mean performance across all tasks
+                    y = perf_row.iloc[0][perf_tasks].mean()
+                else:
+                    y = perf_row.iloc[0][task]
                 
                 x_values.append(x)
                 y_values.append(y)
@@ -168,8 +211,11 @@ for i, task in tqdm(enumerate(perf_tasks), desc='Processing tasks', total=len(pe
                 )
 
         if j == 0:
-            ax.set_ylabel(task.replace('_', ' ').title(), fontsize=8)
-        if i == len(perf_tasks) - 1:
+            if task == 'average':
+                ax.set_ylabel('Average Performance', fontsize=8)
+            else:
+                ax.set_ylabel(task.replace('_', ' ').title(), fontsize=8)
+        if i == len(perf_tasks):  # Changed condition for bottom row
             ax.set_xlabel(x_label, fontsize=8)
         if i == 0:
             col_title = (f"Memory {context.replace('5k', '0.5K').replace('2k', '2K').replace('8k', '8K')}" if j < 3 else 
@@ -224,3 +270,4 @@ fig.savefig(
     bbox_inches='tight',
     dpi=300,
 )
+plt.show()

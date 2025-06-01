@@ -76,11 +76,11 @@ marker_size_dict = {
 #     '8': 85,  # streamingllm_original - make octagons smaller
 }
 
-# 4) Create a 8×4 grid
+# 4) Create a 9×4 grid (changed from 8×4 to add average row)
 fig, axes = plt.subplots(
-    nrows=len(perf_tasks),
+    nrows=len(perf_tasks) + 1,  # Add 1 for the average row
     ncols=4,
-    figsize=(20, 30),
+    figsize=(20, 33),  # Increase height slightly to accommodate new row
 )
 
 # Add helper function to format cache size for display
@@ -104,7 +104,7 @@ def format_cache_size(cache_size: str) -> str:
         # For other techniques, format as "cache=X"
         return f"cache={cache_size.replace('cache_', '')}"
 
-# 5) Populate each subplot
+# 5) Populate each subplot for individual tasks
 for i, perf_task in tqdm(enumerate(perf_tasks), desc='Processing tasks', total=len(perf_tasks)):
     mem_thr_col = 'cite' if perf_task.startswith('cite_') else perf_task
 
@@ -213,14 +213,128 @@ for i, perf_task in tqdm(enumerate(perf_tasks), desc='Processing tasks', total=l
         # only label the leftmost column with the task name
         if j == 0:
             ax.set_ylabel(perf_task.replace('_', ' ').title(), fontsize=8)
-        # only label the bottom row with the x‐axis label
-        if i == len(perf_tasks) - 1:
+        # Update condition for bottom row x-axis label (now it's len(perf_tasks) instead of len(perf_tasks) - 1)
+        if i == len(perf_tasks):  # This will now be the average row
             ax.set_xlabel(x_label, fontsize=8)
         # only title the top row with the column header
         if i == 0:
             col_title = (f"Memory {context.replace('k', 'K')}" if j < 2 else 
                         f"Latency {context.replace('k', 'K')}")
             ax.set_title(col_title, fontsize=10)
+
+# 5.5) Add the average row (new section)
+print("Computing and plotting averages...")
+avg_row_idx = len(perf_tasks)  # This is index 8 (the 9th row)
+
+for j in range(4):
+    ax = axes[avg_row_idx, j]
+    if j < 2:
+        df = helmet_memory_df
+        context = contexts[j]
+        x_label = 'Memory (GB)'
+    else:
+        df = helmet_throughput_df
+        context = contexts[j - 2]
+        df = df.copy()
+        for task in ['recall_jsonkv', 'rag_nq', 'rag_hotpotqa', 'rerank', 'cite', 'niah']:
+            df[task] = df[task].replace(0, float('nan'))
+            df[task] = 1 / df[task]
+        x_label = 'Latency (s/sample)'
+
+    # Group data by technique and model
+    subset = df[df['context_length'] == context]
+    for (technique, model), group in subset.groupby(['technique', 'model']):
+        # Apply same sorting logic as above
+        if 'cache_size' in group.columns:
+            # Custom sorting for different techniques (same as above)
+            if technique == "streamingllm":
+                group['sort_key'] = group['cache_size'].apply(
+                    lambda x: int(x.split('_')[2]) if x.startswith('n_local_') else 0
+                )
+                group = group.sort_values('sort_key')
+                group = group.drop('sort_key', axis=1)
+            elif technique in ["snapkv", "pyramidkv"] and group['cache_size'].iloc[0].startswith('w32_c'):
+                def extract_cache_and_k(cache_size):
+                    parts = cache_size.split('_')
+                    cache_val = int(parts[1][1:])
+                    k_val = int(parts[2][1:])
+                    return (cache_val, k_val)
+                
+                group['sort_key'] = group['cache_size'].apply(extract_cache_and_k)
+                group = group.sort_values('sort_key')
+                group = group.drop('sort_key', axis=1)
+            else:
+                group['sort_key'] = group['cache_size'].apply(
+                    lambda x: int(x.replace('cache_', '')) if x.startswith('cache_') else 0
+                )
+                group = group.sort_values('sort_key')
+                group = group.drop('sort_key', axis=1)
+        
+        x_values = []
+        y_values = []
+        
+        for _, row in group.iterrows():
+            x = row['cite' if any(task.startswith('cite_') for task in perf_tasks) else 'recall_jsonkv']  # Use appropriate column
+            
+            # Find corresponding performance row
+            perf_row = helmet_performance_df[
+                (helmet_performance_df['technique'] == row['technique']) &
+                (helmet_performance_df['context_length'] == context) &
+                (helmet_performance_df['model'] == row['model']) &
+                (helmet_performance_df['cache_size'] == row['cache_size'])
+            ]
+            if perf_row.empty or pd.isna(x):
+                continue
+            
+            # Calculate average across all performance tasks
+            perf_values = []
+            for task in perf_tasks:
+                task_val = perf_row.iloc[0][task]
+                if not pd.isna(task_val):
+                    perf_values.append(task_val)
+            
+            if len(perf_values) > 0:
+                y = np.mean(perf_values)
+                x_values.append(x)
+                y_values.append(y)
+                
+                # Plot individual points
+                ax.scatter(
+                    x, y,
+                    color=model_palette[model],
+                    marker=marker_dict[technique],
+                    s=marker_size_dict[marker_dict[technique]],
+                    edgecolor='k',
+                    linewidth=0.5,
+                )
+                
+                # Add cache size annotation for the last point in each group
+                if len(x_values) > 1 and row.name == group.index[-1]:
+                    cache_label = format_cache_size(row['cache_size'])
+                    ax.annotate(
+                        cache_label,
+                        (x, y),
+                        xytext=(5, 5),
+                        textcoords='offset points',
+                        fontsize=6,
+                        alpha=0.7
+                    )
+        
+        # Connect points with lines if there are multiple cache sizes
+        if len(x_values) > 1:
+            ax.plot(
+                x_values, y_values,
+                color=model_palette[model],
+                linestyle='--',
+                alpha=0.5,
+                linewidth=1
+            )
+
+    # Label the average row
+    if j == 0:
+        ax.set_ylabel('Average Score', fontsize=8)
+    # Label x-axis for the bottom row
+    ax.set_xlabel(x_label, fontsize=8)
 
 # 6) Build a shared legend to the right
 legend_handles = []
