@@ -64,6 +64,10 @@ def run_test(args, model, dataset, test_file, demo_file):
         all_inputs.append(inputs)
         all_input_texts.append(input_text)
     
+    # PruLong: Reset stats for all devices
+    for i in range(torch.cuda.device_count()):
+        torch.cuda.reset_peak_memory_stats(i)
+    
     logger.info("Running generation...")
     start_time = time.time()
     # generate all outputs
@@ -74,6 +78,15 @@ def run_test(args, model, dataset, test_file, demo_file):
     else:
         all_outputs = model.generate_batch(all_inputs)
     end_time = time.time()
+
+    # PruLong: read back the peak allocated and reserved memory (in bytes)
+    # For GPU 0
+    peak_alloc_0 = torch.cuda.max_memory_allocated(0) / 1024**2
+    peak_reserved_0 = torch.cuda.max_memory_reserved(0) / 1024**2
+
+    # Across all GPUs
+    peak_alloc = sum([torch.cuda.max_memory_allocated(i) for i in range(torch.cuda.device_count())]) / 1024**2
+    peak_reserved = sum([torch.cuda.max_memory_reserved(i) for i in range(torch.cuda.device_count())]) / 1024**2
 
     # then we do all the postprocessing + evaluation
     results = []
@@ -97,8 +110,16 @@ def run_test(args, model, dataset, test_file, demo_file):
         for k, v in mets.items():
             metrics[k].append(v)
 
+        # PruLong: Record memory stats
+        metrics["peak_alloc_gpu0"].append(peak_alloc_0)
+        metrics["peak_reserved_gpu0"].append(peak_reserved_0)
+        metrics["peak_alloc"].append(peak_alloc)
+        metrics["peak_reserved"].append(peak_reserved)
+
         metrics["input_len"].append(output["input_len"])
         metrics["output_len"].append(output["output_len"])
+        metrics["time_taken"].append(end_time - start_time)
+
         result = {**test_item, **output}
         result.pop("context", None)
         result.pop("input_ids", None)
@@ -134,8 +155,14 @@ def run_test(args, model, dataset, test_file, demo_file):
         logger.error("No results to evaluate, something went wrong, returning...")
         return output_path
 
-    averaged_metrics = {k: np.mean(v)*(100 if "_len" not in k else 1) for k, v in metrics.items()}
+    averaged_metrics = {
+        k: np.mean(v)*(
+            100 if "_len" not in k else 1
+        ) 
+        for k, v in metrics.items()
+    }
 
+    # For memory stats
     logger.info("Averaged metrics:")
     for k, v in averaged_metrics.items():
         logger.info(f"{k}: {v:.02f}")
