@@ -1,0 +1,71 @@
+"answer": "5279567 > 8117091 > 2647994 > 5417954 > 
+8117090 > 6704400 > 8117096 > 4332918 > 444374 > 
+6711103 > 857788 > 444380 > 7872270 > 1713757 > 
+4548482 > 3123685 > 6220312 > 4151568 > 7448797 > 
+5149782 > 1358011 > 8117094 > 2505772 > 5895327 > 
+442416 > 2897538 > 5274242 > 4228885 > 2211670 > 
+7521880 > 4908869 > 4230143 > 4577147 > 8714217 > 
+6669229 > 444382 > 6168449 > 7686609 > 679108 > 
+4226570 > 1871650 > 7114916 > 1006623 > 641145 > 
+2790808 > 7918228 > 2963046 > 2325363 > 4867765 > 
+1719752 > 5439738 > 1102979 > 3141935 > 5162747 > 
+1974112 > 454301 > 465038 > 8736228 > 5836029 > 
+6636066 > 224525 > 3292874 > 6037576 > 4824344 > 
+7198133 > 3879586 > 7568778 > 3664749 > 7664982 > 
+4570984 > 4400851 > 4329090 > 8247980 > 13975 > 
+6204392 > 6912385 > 3811756 > 8117092 > 517672 > 
+897142 > 1243621 > 2023470 > 8630758 > 4737700 > 
+3486240 > 7577009 > 7353 > 5576905 > 7435845 > 
+4275517 > 4586544 > 6519869 > 6127218 > 4202330 > 
+5217702 > 2031071 > 4453440 > 388384 > 3325667 > 
+1405944 > 7322573 > 857502 > 752555 > 6679306 > 
+6372843 > 5503528 > 3486241 > 7799607 > 3952047 > 
+2190458 > 3046417 > 7111518 > 3067799 > 1231020 > 
+5585268 > 6348309 > 1714171 > 7065010 > 1597713 > 
+7080578 > 4394609 > 8427282 > 1179677 > 3952048 > 
+3347253 > 3523655 > 4675561 > 1130539 > 3242422 > 
+5957109 > 519802 > 8622621 > 6949532 > 4609422 > 
+2747099 > 483603 > 3952045 > 4634048 > 1788221 > 
+8572329 > 5558259 > 5274247 > 4479459 > 2246761 > 
+5370444 > 4553943 > 2927901 > 2945211 > 1639359 > 
+4829047 > 1686402 > 4107505 > 7322065 > 1971272 > 
+6511371 > 1675887 > 865452 > 5436918 > 1884059 > 
+3202487 > 6739805 > 2304745 > 1358698 > 5419448 > 
+7260827 > 5594383 > 2016857 > 143135 > 1287481 > 
+4270203 > 4189977 > 2185436 > 4655941 > 5274243 > 
+7402270 > 653663 > 4266558 > 8008341 > 4995441 > 
+4298576 > 5092968 > 4224805 > 8577402 > 1364093 > 
+842909 > 2764731 > 6501323 > 3599861 > 2343617 > 
+3678272 > 6158404 > 2353518 > 7433528 > 5650666 > 
+5651064 > 280244 > 8486192 > 6577449 > 7669753 > 
+1240998 > 1063231 > 8327369 > 837162 > 3344124 > 
+3128853 > 696388 > 2367909 > 2716697 > 6171096 > 
+1385777 > 2005757 > 7575866 > 7061520 > 3952042 > 
+8293276 > 3952046 > 5417953 > 2569655 > 3286152 > 
+5907123 > 2214780 > 6904392 > 468342 > 2911040 > 
+5764521 > 43424 > 132747 > 7174016 > 2452018 > 
+4911552 > 6334377 > 4228887 > 740442 > 2661304 > 
+2253981 > 6497760 > 7517304 > 1023017 > 1636337 > 
+3416300 > 3976590 > 972571 > 266552 > 758605 > 
+3449176 > 5687476 > 4107506 > 2981485 > 1364115 > 
+951810 > 949108 > 5502521 > 6339782 > 1958382 > 
+4144446 > 7348566 > 4754352 > 4107509 > 6295009 > 
+8825558 > 339860 > 1578359 > 8835717 > 218634 > 
+2505776 > 1864741 > 1544838 > 6587624 > 6807730 > 
+5558261 > 4508078 > 2048474 > 1161411 > 5236025 > 
+1569471 > 2778573 > 4242644 > 5276822 > 2944824 > 
+8269037 > 364372 > 4384115 > 7517959 > 5023216 > 3831606",
+
+ "<|begin_of_text|>You are provided with a list of documents, each indicated by their ID. Rank each document based on their relevance to the question in descending order from most relelvant to least relevant texts. Include all documents in the rankings. Write your answer using the unique IDs, with the following format:\nRanking: ID3 > ID1 > ID2\n\n
+[ID: 4842895] Document: RSA Security is a United States-based organization that creates encryption, network and computer security products. Ron Rivest Adi Shamir, and Len Adleman founded RSA as an independent company in 1982. RSA derives from the initials of each of the founders names.\n\n
+[ID: 1929910] Document: Definition - What does RSA Encryption mean? RSA encryption is a public-key encryption technology developed by RSA Data Security. The RSA algorithm is based on the difficulty in factoring very large numbers. Based on this principle, the RSA encryption algorithm uses prime factorization as the trap door for encryption. Deducing an RSA key, therefore, takes a huge amount of time and processing power. RSA is the standard encryption method for important data, especially data that's transmitted over the Internet.\n\n
+[ID: 4737066] Document: A public-key encryption technology developed by RSA Data Security, Inc. The acronym stands for Rivest, Shamir, and Adelman, the inventors of the technique. The RSA algorithm is based on the fact that there is no efficient way to factor very large numbers. public-key encryption technology developed by RSA Data Security, Inc. The acronym stands for Rivest, Shamir, and Adelman, the inventors of the technique. The RSA algorithm is based on the fact that there is no efficient way to factor very large numbers.\n\n
+[ID: 3998566] Document: noun. 1  The definition of a tone is a sound in terms of its quality, pitch, origin or power. An example of tone is off-key. 2  Tone is the quality or implied meaning of something that is said. An example of tone is sarcasm.\n\n
+[ID: 4842896] Document: RSA (cryptosystem), the Rivest-Shamir-Adleman cryptosystem, a cryptosystem for public-key encryption RSA Conference, an annual cryptography convention. RSA Factoring Challenge, a computational number theory challenge aimed at factorizing a given set of semi-prime numbers. RSA numbers, a set of numbers that have as factors two <skip> ] Document: klonopin, anxiety, pain, generalized anxiety disorder, chronic, prescription, stomach pain, stomach. I am prescribed Klonopin for anxiety problems. I do not take them very often so that I don't have to worry so much about potential addiction problems -- it's prescribed.5mg/day for 30 days -- I find myself taking it once a week.\n\n
+[ID: 364372] Document: benzodiazepines belong to a group of drugs called tranquilizers that may be prescribed for anxiety benzodiazepine may be prescribed to help an alcoholic detox from drinkingpatients who regularly take any benzodiazepine should not stop its use without consulting a medical professionalf the recommended dosage for the tranquilizer is exceeded or a benzodiazepine is taken for longer than prescribed dependence and tolerance may result tolerance refers to the body getting used to doses of a drug and this causes a need for higher amounts or more frequent use of the substance to get the same effects\n\n
+[ID: 4384115] Document: there may be a negative interaction between voltaren and alcohol there may be a negative interaction between voltarol and alcohol voltaren is prescribed for pain and is mostly mentioned together with this indication voltarol is prescribed for pain and is mostly mentioned together with this indication\n\n
+[ID: 7517959] Document: Diet(verb) to cause to take food; to feed. Diet(verb) to cause to eat and drink sparingly, or by prescribed rules; to regulate medicinally the food of. Diet(verb) to eat; to take one's meals. Diet(verb) to eat according to prescribed rules; to ear sparingly; as, the doctor says he must diet.\n\n
+[ID: 5023216] Document: Hydrocodone, a semi-synthetic opiate, is a narcotic painkiller generally manufactured in conjunction with other pain medications such as acetaminophen. It is prescribed to treat illnesses such as back pain or chronic cough. Commercially Hydrocodone is prescribed under the generic names of Vicodin and Lortab.\n\n
+[ID: 3831606] Document: I was prescribed Hydrocodone/APAP (10/500) in December 2011. Never took more than the prescribed amount (3x Daily). I am now in day 5 since I quit cold turkey. The first 2 days were rotten.
+
+Query: what is famvir prescribed for\nRanking:",
