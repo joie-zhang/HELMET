@@ -163,10 +163,8 @@ for technique in tqdm(os.listdir(base_dir), desc="Processing techniques"):
                             if "memory_usage" in data:
                                 # Convert memory to GB by dividing by 10^9
                                 memory_data[row_key][task] = float(data["memory_usage"]) / 1e9
-                            if "throughput" in data and "averaged_metrics" in data and "output_len" in data["averaged_metrics"]:
-                                samples_per_second = float(data["throughput"])
-                                avg_tokens_per_sample = float(data["averaged_metrics"]["output_len"])
-                                throughput_data[row_key][task] = samples_per_second * avg_tokens_per_sample
+                            if "throughput" in data:
+                                throughput_data[row_key][task] = float(data["throughput"])
                     elif file.endswith(".json.score"):
                         with open(filepath) as f:
                             score_data = json.load(f)
