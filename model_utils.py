@@ -1,6 +1,7 @@
 import os
 import time
 import json
+import numpy as np
 from typing import Optional, List, Dict, Callable, Any
 import functools
 
@@ -8,13 +9,30 @@ import torch
 from transformers import PreTrainedTokenizer, set_seed
 from tqdm import tqdm
 from tqdm.contrib.concurrent import thread_map
-from minference import MInference
 
 import logging
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s - %(message)s',
                     datefmt='%m/%d/%Y %H:%M:%S')
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
+
+def load_attn_pattern_new(attn_load_dir, sink_size=None, recent_size=None):
+    if attn_load_dir.endswith(".tsv"):
+        path = attn_load_dir
+    else:
+        path = os.path.join(attn_load_dir, "full_attention_heads.tsv")
+    full_attention_heads = np.loadtxt(
+        path,
+        dtype=float,
+        delimiter="\t",
+    )
+    full_attention_heads = np.clip(full_attention_heads, 0, 1)
+    if sink_size is None:
+        config = json.load(open(os.path.join(attn_load_dir, "config.json")))
+        sink_size = config["sink_size"]
+        recent_size = config["recent_size"]
+    return full_attention_heads, sink_size, recent_size
 
 
 def format_chat(
@@ -876,8 +894,46 @@ class HFModel(LLM):
                 **model_kwargs
             )
         
-        # Add this block after model loading but before torch.compile:
-        if any(method in kwargs for method in ["minference", "streamingllm", "streamingllm_original", "quest", "snapkv", "pyramidkv", "kivi"]):
+        # DuoAttention patch for evaluation
+        self.special_settings = {}
+        if "duoattn" in kwargs and kwargs["duoattn"] is not None:
+            logger.warning("Using DuoAttention patch for evaluation!")
+            logger.warning("Note that when using DuoAttention, we use eager attention implementation for compatibility")
+            from duo_attn.utils import load_attn_pattern, sparsify_attention_heads
+            from duo_attn.patch import enable_duo_attention_eval
+            duoattn_path = kwargs["duoattn"]
+            duoattn_sparsity = kwargs["duoattn_sparsity"]
+            attn_heads, sink_size, recent_size = load_attn_pattern_new(
+                duoattn_path,
+                sink_size=kwargs["duoattn_sink"],
+                recent_size=kwargs["duoattn_sliding"],
+            )
+            if kwargs["duoattn_flipping"]:
+                logger.warning("| Flipping the duoattn pattern (for debugging purposes)")
+                attn_heads = 1 - attn_heads
+
+            attn_heads, sparsity = sparsify_attention_heads(attn_heads, sparsity=duoattn_sparsity)
+            enable_duo_attention_eval(
+                self.model,
+                attn_heads,
+                sink_size=kwargs["duoattn_sink"],
+                recent_size=kwargs["duoattn_sliding"],
+            )
+            self.chunk_prefilling = kwargs["duoattn_chunk_prefilling"]
+            if self.chunk_prefilling is not None:
+                logger.warning(f"Using chunk prefilling (size={self.chunk_prefilling}) for DuoAttention!")
+
+            self.special_settings["method"] = "duo"
+            self.special_settings["method_params"] = {
+                "sparsity": duoattn_sparsity,
+                "sink_size": kwargs["duoattn_sink"],
+                "recent_size": kwargs["duoattn_sliding"],
+            }
+        
+        # MInference etc patches for efficient inference techniques
+        elif any(method in kwargs for method in ["minference", "streamingllm", "streamingllm_original", "quest", "snapkv", "pyramidkv", "kivi"]):
+            from minference import MInference
+            # self.chunk_prefilling = None
             # Set up common pattern for all MInference methods
             attn_type = "minference"
             kv_type = kwargs.get("kv_type", "dense")
@@ -913,6 +969,7 @@ class HFModel(LLM):
 
         if kwargs.get("torch_compile", True):
             self.model = torch.compile(self.model)
+            # https://huggingface.co/docs/transformers/en/llm_optims?static-kv=basic+usage%3A+generation_config#static-kv-cache-and-torchcompile
             # self.model.forward = torch.compile(self.model.forward, mode="reduce-overhead", fullgraph=True)
 
         # use the default if possible, append if necessary
@@ -973,6 +1030,13 @@ class HFModel(LLM):
             else:
                 inputs = BatchEncoding({"input_ids": inputs.input_ids, "attention_mask": inputs.attention_mask, "past_key_values": past_key_values})
 
+
+        print("********************THE CURRENT BUG IS HERE********************")
+        print("Inputs keys →", inputs.keys())
+        # print("Inputs values →", inputs.values())
+        print("********************THE CURRENT BUG IS HERE********************")
+        assert "cache_position" not in inputs, "cache_position sneaked in"
+        
         outputs = self.model.generate(
             **inputs,
             max_new_tokens=self.generation_max_length,
@@ -1144,8 +1208,18 @@ def load_LLM(args):
             kwargs["rope_theta"] = args.rope_theta
         if args.quantize is not None:
             kwargs["quantize"] = args.quantize
+        # DuoAttention
+        if args.duoattn is not None:
+            kwargs["duoattn"] = args.duoattn
+            kwargs["duoattn_sparsity"] = args.duoattn_sparsity
+            kwargs["duoattn_sink"] = args.duoattn_sink
+            kwargs["duoattn_sliding"] = args.duoattn_sliding
+            kwargs["duoattn_chunk_prefilling"] = args.duoattn_chunk_prefilling
+            kwargs["duoattn_flipping"] = args.duoattn_flipping
+            kwargs["attn_implementation"] = "eager"
+        
         # Add efficient inference method flags
-        if any(method in ["minference", "snapkv", "pyramidkv", "quest", "kivi", "streamingllm", "streamingllm_original"] 
+        elif any(method in ["minference", "snapkv", "pyramidkv", "quest", "kivi", "streamingllm", "streamingllm_original"] 
               for method in dir(args) if getattr(args, method, False)):
             # Common KV cache configuration parameters for methods that use them
             if args.minference:

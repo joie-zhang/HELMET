@@ -52,6 +52,14 @@ def parse_arguments():
     parser.add_argument("--rope_theta", type=int, default=None, help="override rope theta")
     parser.add_argument("--quantize", type=int, default=16, help="4, 8, or 16 bit quantization")
     
+    # duoattn
+    parser.add_argument("--duoattn", type=str, default=None, help="path to the duoattn pattern")
+    parser.add_argument("--duoattn_sparsity", type=float, default=None, help="sparsity of the duoattn pattern")
+    parser.add_argument("--duoattn_sink", type=int, default=128, help="sink size of the duoattn pattern")
+    parser.add_argument("--duoattn_sliding", type=int, default=1024, help="sliding size of the duoattn pattern")
+    parser.add_argument("--duoattn_chunk_prefilling", type=int, default=None, help="use chunk prefilling")
+    parser.add_argument("--duoattn_flipping", action="store_true", help="whether to flip the duoattn pattern")
+
     # Create a mutually exclusive sgroup for the different efficient inference methods
     method_group = parser.add_mutually_exclusive_group()
     method_group.add_argument("--minference", action="store_true", help="use MInference")
