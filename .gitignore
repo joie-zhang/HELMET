@@ -4,13 +4,8 @@ output/
 env/
 *_env/
 joblog/
-old_output/
-old_joblog/
-output_v1_uniform/
-joblog_v1_uniform/
-output_v2_still_buggy/
-joblog_v2_still_buggy/
 spoctmp
+flash_attn*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
