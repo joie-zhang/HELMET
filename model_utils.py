@@ -73,7 +73,7 @@ class LLM:
         generation_max_length: int=2048,
         generation_min_length: int=0,
         do_sample: bool=True,
-        stop_newline: bool=False,
+        stop_new_line: bool=False,
         use_chat_template: bool=False,
         system_message: Optional[str]="You are a helpful assistant.",
     ):
@@ -87,7 +87,7 @@ class LLM:
         self.use_chat_template = use_chat_template
         self.system_message = system_message
         self.stops = None
-        if stop_newline:
+        if stop_new_line:
             self.stops = ["\n", "\n\n"]
 
     """
@@ -149,7 +149,7 @@ class OpenAIModel(LLM):
         generation_max_length=2048,
         generation_min_length=0,
         do_sample=True,
-        stop_newline=False,
+        stop_new_line=False,
         use_chat_template=True,
         system_message=None,
         seed=42,
@@ -163,7 +163,7 @@ class OpenAIModel(LLM):
             generation_max_length=generation_max_length,
             generation_min_length=generation_min_length,
             do_sample=do_sample,
-            stop_newline=stop_newline,
+            stop_new_line=stop_new_line,
             use_chat_template=use_chat_template,
             system_message=system_message,
         )
@@ -336,7 +336,7 @@ class TgiVllmModel(OpenAIModel):
         generation_max_length=2048, 
         generation_min_length=0, 
         do_sample=True, 
-        stop_newline=False, 
+        stop_new_line=False, 
         use_chat_template=True, 
         system_message=None,
         seed=42,
@@ -352,7 +352,7 @@ class TgiVllmModel(OpenAIModel):
         self.use_chat_template = use_chat_template
         self.system_message = system_message
         self.stops = None
-        if stop_newline:
+        if stop_new_line:
             self.stops = ["\n", "\n\n"]
         
         from openai import OpenAI
@@ -395,7 +395,7 @@ class AnthropicModel(LLM):
         generation_max_length=2048,
         generation_min_length=0,
         do_sample=True,
-        stop_newline=False,
+        stop_new_line=False,
         use_chat_template=True,
         system_message=None,
         **kwargs,
@@ -408,7 +408,7 @@ class AnthropicModel(LLM):
             generation_max_length=generation_max_length,
             generation_min_length=generation_min_length,
             do_sample=do_sample,
-            stop_newline=stop_newline,
+            stop_new_line=stop_new_line,
             use_chat_template=use_chat_template,
             system_message=system_message,
         )
@@ -433,7 +433,7 @@ class AnthropicModel(LLM):
         self.generation_max_length = generation_max_length
         self.do_sample = do_sample
         self.stops = None
-        if stop_newline: # claude does not support newline
+        if stop_new_line: # claude does not support newline
             pass
         if self.system_message is None:
             # claude expects string as system message
@@ -575,7 +575,7 @@ class GeminiModel(LLM):
         generation_max_length=2048,
         generation_min_length=0,
         do_sample=True,
-        stop_newline=False,
+        stop_new_line=False,
         use_chat_template=True,
         system_message=None,
         **kwargs,
@@ -681,7 +681,7 @@ class TogetherModel(LLM):
         generation_max_length=2048,
         generation_min_length=0,
         do_sample=True,
-        stop_newline=False,
+        stop_new_line=False,
         use_chat_template=True,
         system_message=None,
         **kwargs,
@@ -847,7 +847,7 @@ class HFModel(LLM):
         generation_max_length=2048,
         generation_min_length=0,
         do_sample=True,
-        stop_newline=False,
+        stop_new_line=False,
         use_chat_template=False,
         system_message=None,
         seed=42,
@@ -1011,7 +1011,7 @@ class VLLMModel(LLM):
         generation_max_length=2048,
         generation_min_length=0,
         do_sample=True,
-        stop_newline=False,
+        stop_new_line=False,
         use_chat_template=False,
         system_message=None,
         seed=42,
@@ -1024,7 +1024,7 @@ class VLLMModel(LLM):
             generation_max_length=generation_max_length,
             generation_min_length=generation_min_length,
             do_sample=do_sample,
-            stop_newline=stop_newline,
+            stop_new_line=stop_new_line,
             use_chat_template=use_chat_template,
             system_message=system_message,
         )
@@ -1144,7 +1144,7 @@ class SGLangModel(LLM):
         generation_max_length=2048,
         generation_min_length=0,
         do_sample=True,
-        stop_newline=False,
+        stop_new_line=False,
         use_chat_template=False,
         system_message=None,
         seed=42,
@@ -1157,7 +1157,7 @@ class SGLangModel(LLM):
             generation_max_length=generation_max_length,
             generation_min_length=generation_min_length,
             do_sample=do_sample,
-            stop_newline=stop_newline,
+            stop_new_line=stop_new_line,
             use_chat_template=use_chat_template,
             system_message=system_message,
         )
