@@ -11,10 +11,10 @@ submit_job() {
         OUT_DIR=output/${EXP_TYPE}/${CONTEXT_LEN}/${MODEL_NAME}/${SUFFIX}
     fi
 
-    if [ -f ${OUT_DIR}/.${CONFIG_FILENAME}.completed ]; then
-        echo "skipping ${MODEL_NAME} - ${CONFIG_FILENAME}"
-        return
-    fi
+    # if [ -f ${OUT_DIR}/.${CONFIG_FILENAME}.completed ]; then
+    #     echo "skipping ${MODEL_NAME} - ${CONFIG_FILENAME}"
+    #     return
+    # fi
     
     sbatch<<EOT
 #!/bin/bash -l
@@ -37,7 +37,7 @@ source /scratch/gpfs/ab4197/anaconda3/etc/profile.d/conda.sh
 conda activate duo
 
 echo python /scratch/gpfs/DANQIC/jz4391/HELMET/eval.py \
-    --config ${CONFIG_FILENAME} \
+    --config ${TASK} \
     --model_name_or_path $MODEL \
     --output_dir $OUT_DIR \
     --seed $SEED \
@@ -58,28 +58,24 @@ EOT
 export OUTLINES_CACHE_DIR=/tmp/outlines
 
 tasks=(
-    # "configs/niah_16k.yaml"
-    # "configs/cite_16k.yaml"
-    # "configs/recall_jsonkv_16k.yaml"
-    # "configs/rerank_16k.yaml"
-    # "configs/rag_hotpotqa_16k.yaml"
-    # "configs/rag_nq_16k.yaml"
-
-    # "configs/niah_32k.yaml"
-    # "configs/cite_32k.yaml"
-    # "configs/recall_jsonkv_32k.yaml"
-    # "configs/rerank_32k.yaml"
-    # "configs/rag_hotpotqa_32k.yaml"
-
-    # "configs/rag_nq_32k.yaml"
-
-    # "longproc_addon/configs/html_to_tsv_0.5k.yaml"
-    # "longproc_addon/configs/pseudo_to_code_0.5k.yaml"
-    # "longproc_addon/configs/pseudo_to_code_2k.yaml"
-
-    # "longproc_addon/configs/html_to_tsv_2k.yaml"
     # "longproc_addon/configs/travel_planning_2k.yaml"
+    # "longproc_addon/configs/html_to_tsv_2k.yaml"
+    # "longproc_addon/configs/pseudo_to_code_2k.yaml"
+    # "configs/rag_nq_16k.yaml"
+    # "configs/rag_hotpotqa_32k.yaml"
+    # "configs/rerank_32k.yaml"
+    # "configs/recall_jsonkv_32k.yaml"
+    # "configs/cite_32k.yaml"
+    # "configs/niah_32k.yaml"
+    # "longproc_addon/configs/pseudo_to_code_0.5k.yaml"
+    # "longproc_addon/configs/html_to_tsv_0.5k.yaml"
+    # "configs/rag_hotpotqa_16k.yaml"
+    # "configs/rerank_16k.yaml"
+    # "configs/recall_jsonkv_16k.yaml"
+    # "configs/cite_16k.yaml"
+    # "configs/niah_16k.yaml"
 
+    "configs/rag_nq_32k.yaml"
     "longproc_addon/configs/html_to_tsv_8k.yaml"
     "longproc_addon/configs/travel_planning_8k.yaml"
 )
@@ -106,11 +102,11 @@ for TASK in ${tasks[@]}; do # cite rerank rag_nq rag_hotpotqa recall_jsonkv niah
             MASKS="/scratch/gpfs/ab4197/p-longhead/duo-attention/attn_patterns/Meta-Llama-3.1-8B-Instruct/lr=0.02-reg=0.05-ctx=1000_128000-multi_passkey10/full_attention_heads.tsv"
             SPARSITY=0.5
             PREFILL=32768
-            QUANT_BITS=16
             
             SUFFIX="_sp${SPARSITY}_tg"
             EXTRA="--no_torch_compile --duoattn $MASKS --duoattn_sparsity $SPARSITY"
-            TAG="${EXP_TYPE}_${CONTEXT_LEN}_${MODEL}_${QUANT_BITS}bit_${SPARSITY}sp_${PREFILL}pf"
+            MODEL_NAME=$(basename $MODEL)
+            TAG="${EXP_TYPE}_${MODEL_NAME}_${SPARSITY}sp_${PREFILL}pf"
             SEED=42
             
             if [[ $PREFILL -gt 0 ]]; then
