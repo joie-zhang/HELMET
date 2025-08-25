@@ -4,3 +4,6 @@
 [submodule "streaming-llm"]
 	path = streaming-llm
 	url = https://github.com/mit-han-lab/streaming-llm.git
+[submodule "duo-attention/Block-Sparse-Attention"]
+	path = duo-attention/Block-Sparse-Attention
+	url = https://github.com/mit-han-lab/duo-attention
