@@ -1,0 +1,93 @@
+{
+  "llama_16k_c1024": {
+    "total_failure_cases": 40,
+    "truncated_cases": 39,
+    "truncation_percentage": 97.5,
+    "top_failure_modes": {
+      "sequential_numbers": 12,
+      "repeated_same_id": 11,
+      "mostly_same_with_variations": 7,
+      "suspiciously_short_ids": 6,
+      "incomplete_ranking": 3
+    }
+  },
+  "llama_16k_c4096": {
+    "total_failure_cases": 22,
+    "truncated_cases": 22,
+    "truncation_percentage": 100.0,
+    "top_failure_modes": {
+      "repeated_same_id": 12,
+      "sequential_numbers": 5,
+      "mostly_same_with_variations": 4,
+      "incomplete_ranking": 1
+    }
+  },
+  "llama_32k_c1024": {
+    "total_failure_cases": 41,
+    "truncated_cases": 41,
+    "truncation_percentage": 100.0,
+    "top_failure_modes": {
+      "sequential_numbers": 16,
+      "repeated_same_id": 13,
+      "incomplete_ranking": 5,
+      "suspiciously_short_ids": 5,
+      "mostly_same_with_variations": 2
+    }
+  },
+  "llama_32k_c4096": {
+    "total_failure_cases": 34,
+    "truncated_cases": 31,
+    "truncation_percentage": 91.17647058823529,
+    "top_failure_modes": {
+      "sequential_numbers": 15,
+      "repeated_same_id": 8,
+      "incomplete_ranking": 4,
+      "mostly_same_with_variations": 2,
+      "suspiciously_short_ids": 2
+    }
+  },
+  "qwen_16k_c1024": {
+    "total_failure_cases": 41,
+    "truncated_cases": 6,
+    "truncation_percentage": 14.634146341463413,
+    "top_failure_modes": {
+      "no_truncation_detected": 31,
+      "insufficient_ids": 4,
+      "sequential_numbers": 3,
+      "incomplete_ranking": 2,
+      "repeated_same_id": 1
+    }
+  },
+  "qwen_16k_c4096": {
+    "total_failure_cases": 41,
+    "truncated_cases": 4,
+    "truncation_percentage": 9.75609756097561,
+    "top_failure_modes": {
+      "no_truncation_detected": 37,
+      "sequential_numbers": 4
+    }
+  },
+  "qwen_32k_c1024": {
+    "total_failure_cases": 41,
+    "truncated_cases": 5,
+    "truncation_percentage": 12.195121951219512,
+    "top_failure_modes": {
+      "no_truncation_detected": 32,
+      "insufficient_ids": 4,
+      "incomplete_ranking": 3,
+      "mostly_same_with_variations": 1,
+      "sequential_numbers": 1
+    }
+  },
+  "qwen_32k_c4096": {
+    "total_failure_cases": 41,
+    "truncated_cases": 2,
+    "truncation_percentage": 4.878048780487805,
+    "top_failure_modes": {
+      "no_truncation_detected": 38,
+      "sequential_numbers": 1,
+      "insufficient_ids": 1,
+      "mostly_same_with_variations": 1
+    }
+  }
+}
