@@ -7,3 +7,6 @@
 [submodule "duo-attention/Block-Sparse-Attention"]
 	path = duo-attention/Block-Sparse-Attention
 	url = https://github.com/mit-han-lab/duo-attention
+[submodule "src/minference"]
+	path = src/minference
+	url = https://github.com/joie-zhang/MInference
