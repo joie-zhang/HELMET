@@ -55,6 +55,10 @@ streamingllm_original,5k,Qwen2.5-7B-Instruct,default,,55.21939326005035,64.0
 streamingllm_original,5k,Llama-3.1-8B-Instruct,default,,50.19556031052744,54.0
 streamingllm_original,2k,Qwen2.5-7B-Instruct,default,40.0,33.68229585818331,26.0
 streamingllm_original,2k,Llama-3.1-8B-Instruct,default,48.0,30.42169313980497,30.0
+duoattn,8k,Llama-3.1-8B-Instruct,sp0.5_pf32768,0.0,26.144167351571845,
+duoattn,5k,Llama-3.1-8B-Instruct,sp0.7_pf32768,,,54.0
+duoattn,5k,Llama-3.1-8B-Instruct,sp0.5_pf32768,,41.90814856924953,54.0
+duoattn,2k,Llama-3.1-8B-Instruct,sp0.5_pf32768,38.0,23.78380363860574,26.0
 snapkv,8k,Qwen2.5-7B-Instruct,w32_c4096_k7_maxpool,0.0,0.03732925869333704,
 snapkv,8k,Qwen2.5-7B-Instruct,w32_c1024_k7_maxpool,0.0,0.0,
 snapkv,8k,Llama-3.1-8B-Instruct,w32_c4096_k7_maxpool,0.0,0.05190708195620963,
