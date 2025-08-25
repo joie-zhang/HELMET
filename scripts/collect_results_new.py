@@ -88,6 +88,7 @@ def should_skip_dir(dirname: str) -> bool:
 
 # Traverse directories
 for technique in tqdm(os.listdir(base_dir), desc="Processing techniques"):
+    print(f"Current technique: {technique}")
     technique_path = os.path.join(base_dir, technique)
     if not os.path.isdir(technique_path):
         continue
@@ -122,6 +123,23 @@ for technique in tqdm(os.listdir(base_dir), desc="Processing techniques"):
                     elif q.startswith("16bit"):
                         row_key = (technique, context_length, model, "default")
                         subdirs.append((os.path.join(model_path, q), row_key))
+            # Handle duoattn folders with sparsity and prefill parameters
+            elif technique == "duoattn":
+                for subdir in os.listdir(model_path):
+                    if should_skip_dir(subdir):
+                        continue
+                    if subdir.startswith("_sp"):
+                        try:
+                            # Parse _sp0.5_pf32768_tg format
+                            parts = subdir.split('_')
+                            sparsity = parts[1].replace('sp', '')  # Get 0.5 from sp0.5
+                            prefill = parts[2].replace('pf', '')   # Get 32768 from pf32768
+                            cache_params = f"sp{sparsity}_pf{prefill}"
+                            row_key = (technique, context_length, model, cache_params)
+                            subdirs.append((os.path.join(model_path, subdir), row_key))
+                        except (ValueError, IndexError) as e:
+                            print(f"Warning: Could not parse duoattn directory name: {subdir}")
+                            continue
             # Handle cache size variations for specific techniques
             elif technique in ["streamingllm", "snapkv", "pyramidkv"]:
                 for cache_dir in os.listdir(model_path):
