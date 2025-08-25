@@ -20,7 +20,8 @@ helmet_performance_df = helmet_performance_df[~helmet_performance_df['technique'
 unwanted_configs = [
     ('pyramidkv', 'w32_c4096_k5_avgpool'),
     ('snapkv', 'w32_c4096_k5_avgpool'), 
-    ('streamingllm', 'n_local_3968_n_init_128')
+    ('streamingllm', 'n_local_3968_n_init_128'),
+    ('duoattn', 'sp0.7_pf32768')
 ]
 
 # Apply filters to all dataframes
@@ -61,6 +62,7 @@ marker_dict = {
     'pyramidkv':    'P',
     'snapkv':       'X',
     'streamingllm': '*',
+    'duoattn': 'v',
 #     'streamingllm_original': '8',
 }
 
@@ -73,6 +75,7 @@ marker_size_dict = {
     'P': 120,  # pyramidkv - slightly larger
     'X': 120,  # snapkv - slightly larger
     '*': 200,  # streamingllm - make stars bigger
+    'v': 100,
 #     '8': 85,  # streamingllm_original - make octagons smaller
 }
 
@@ -121,7 +124,7 @@ for i, perf_task in tqdm(enumerate(perf_tasks), desc='Processing tasks', total=l
             for task in ['recall_jsonkv', 'rag_nq', 'rag_hotpotqa', 'rerank', 'cite', 'niah']:
                 df[task] = df[task].replace(0, float('nan'))
                 df[task] = 1 / df[task]
-            x_label = 'Latency (s/sample)'
+            x_label = 'Latency (s/token)'
 
         # Group data by technique and model
         subset = df[df['context_length'] == context]
@@ -239,7 +242,7 @@ for j in range(4):
         for task in ['recall_jsonkv', 'rag_nq', 'rag_hotpotqa', 'rerank', 'cite', 'niah']:
             df[task] = df[task].replace(0, float('nan'))
             df[task] = 1 / df[task]
-        x_label = 'Latency (s/sample)'
+        x_label = 'Latency (s/token)'
 
     # Group data by technique and model
     subset = df[df['context_length'] == context]
@@ -351,7 +354,7 @@ for model, color in model_palette.items():
 
 # Add technique handles with cache size info
 for tech, marker in marker_dict.items():
-    if tech in ["snapkv", "pyramidkv", "streamingllm"]:
+    if tech in ["snapkv", "pyramidkv"]:
         # Add a line to show connection between cache sizes
         legend_handles.append(Line2D([0], [0],
                                    marker=marker, color='k',
@@ -387,3 +390,131 @@ fig.savefig(os.path.join(plots_dir, 'helmet_overall_plot.png'),
             bbox_inches='tight',  # Added to ensure legend is included
             dpi=300)  # Increased DPI for better quality
 print("Done!")
+
+import matplotlib.pyplot as plt
+import os
+
+# Assuming you already have 'fig' and 'axes' created as in your script
+# Let's split the original 9x4 grid into three separate 3x4 grids
+
+# Directory for the split plots
+split_plots_dir = os.path.join(plots_dir, 'split_plots_helmet')
+os.makedirs(split_plots_dir, exist_ok=True)
+
+# Define splits: (row_start, row_end, col_start, col_end)
+splits = [
+    (0, 3, 0, 4),  # rows 0-2 (first 3 tasks), all 4 columns
+    (3, 6, 0, 4),  # rows 3-5 (next 3 tasks), all 4 columns
+    (6, 9, 0, 4),  # rows 6-8 (last 2 tasks + average), all 4 columns
+]
+
+for idx, (row_start, row_end, col_start, col_end) in enumerate(splits):
+    # Create figure with extra space at bottom for legend
+    sub_fig, sub_axes = plt.subplots(
+        nrows=row_end - row_start,
+        ncols=col_end - col_start,
+        figsize=(15, 13)  # Increased height to accommodate legend
+    )
+    
+    # Ensure sub_axes is always 2D for consistency
+    if (row_end - row_start) == 1:
+        sub_axes = np.expand_dims(sub_axes, axis=0)
+    if (col_end - col_start) == 1:
+        sub_axes = np.expand_dims(sub_axes, axis=1)
+    
+    # Copy over plots from the original axes
+    for i, row in enumerate(range(row_start, row_end)):
+        for j, col in enumerate(range(col_start, col_end)):
+            orig_ax = axes[row, col]
+            sub_ax = sub_axes[i, j]
+            
+            # Transfer content: lines, scatter, annotations, etc.
+            for line in orig_ax.get_lines():
+                sub_ax.plot(
+                    line.get_xdata(),
+                    line.get_ydata(),
+                    color=line.get_color(),
+                    linestyle=line.get_linestyle(),
+                    marker=line.get_marker(),
+                    alpha=line.get_alpha(),
+                    linewidth=line.get_linewidth(),
+                )
+            
+            for coll in orig_ax.collections:
+                sub_ax.scatter(
+                    *coll.get_offsets().T,
+                    marker=coll.get_paths()[0],
+                    color=coll.get_facecolor(),
+                    edgecolors=coll.get_edgecolor(),
+                    linewidths=coll.get_linewidths(),
+                    s=coll.get_sizes(),
+                )
+            
+            # Annotations
+            for annotation in orig_ax.texts:
+                sub_ax.annotate(
+                    annotation.get_text(),
+                    annotation.get_position(),
+                    xytext=annotation.get_position(),
+                    textcoords='data',
+                    fontsize=annotation.get_fontsize(),
+                    alpha=annotation.get_alpha()
+                )
+            
+            sub_ax.set_title(orig_ax.get_title(), fontsize=10)
+            sub_ax.set_xlabel(orig_ax.get_xlabel(), fontsize=8)
+            sub_ax.set_ylabel(orig_ax.get_ylabel(), fontsize=8)
+            sub_ax.set_xlim(orig_ax.get_xlim())
+            sub_ax.set_ylim(orig_ax.get_ylim())
+    
+    # Create legend for this split plot
+    legend_handles = []
+    legend_labels = []
+
+    # Add model handles
+    for model, color in model_palette.items():
+        legend_handles.append(Line2D([0], [0],
+                                    marker='o', color='w',
+                                    markerfacecolor=color,
+                                    markersize=10,
+                                    label=model))
+        legend_labels.append(model)
+
+    # Add technique handles with cache size info
+    for tech, marker in marker_dict.items():
+        if tech in ["snapkv", "pyramidkv"]:
+            # Add a line to show connection between cache sizes
+            legend_handles.append(Line2D([0], [0],
+                                       marker=marker, color='k',
+                                       linestyle='--',
+                                       markersize=10,
+                                       label=f"{tech} (connected cache sizes)"))
+            legend_labels.append(f"{tech} (connected cache sizes)")
+        else:
+            legend_handles.append(Line2D([0], [0],
+                                       marker=marker, color='k',
+                                       linestyle='None',
+                                       markersize=10,
+                                       label=tech))
+            legend_labels.append(tech)
+
+    # Add legend to the subplot
+    sub_fig.legend(
+        legend_handles,
+        legend_labels,
+        loc='center',
+        ncol=len(legend_handles),
+        bbox_to_anchor=(0.5, 0.02),  # Position at bottom center
+        bbox_transform=sub_fig.transFigure,
+        title='Legend',
+        fontsize=10,
+    )
+    
+    # Adjust layout to make room for legend
+    sub_fig.tight_layout(rect=[0, 0.06, 1, 0.98])
+    
+    # Save with higher DPI
+    sub_fig.savefig(os.path.join(split_plots_dir, f'helmet_split_{idx+1}.png'), 
+                    bbox_inches='tight',
+                    dpi=300)
+    plt.close(sub_fig)
