@@ -1,0 +1,186 @@
+{
+  "llama_16k_w32_c1024_k7_maxpool": {
+    "model": "llama",
+    "context_length": "16k",
+    "cache_config": "w32_c1024_k7_maxpool",
+    "results": {
+      "Both Correct": {
+        "count": 1,
+        "percentage": 2.4390243902439024
+      },
+      "Both Wrong": {
+        "count": 2,
+        "percentage": 4.878048780487805
+      },
+      "SnapKV Wins": {
+        "count": 0,
+        "percentage": 0.0
+      },
+      "Baseline Wins": {
+        "count": 38,
+        "percentage": 92.6829268292683
+      }
+    }
+  },
+  "llama_16k_w32_c4096_k7_maxpool": {
+    "model": "llama",
+    "context_length": "16k",
+    "cache_config": "w32_c4096_k7_maxpool",
+    "results": {
+      "Both Correct": {
+        "count": 19,
+        "percentage": 46.34146341463415
+      },
+      "Both Wrong": {
+        "count": 2,
+        "percentage": 4.878048780487805
+      },
+      "SnapKV Wins": {
+        "count": 0,
+        "percentage": 0.0
+      },
+      "Baseline Wins": {
+        "count": 20,
+        "percentage": 48.78048780487805
+      }
+    }
+  },
+  "llama_32k_w32_c1024_k7_maxpool": {
+    "model": "llama",
+    "context_length": "32k",
+    "cache_config": "w32_c1024_k7_maxpool",
+    "results": {
+      "Both Correct": {
+        "count": 0,
+        "percentage": 0.0
+      },
+      "Both Wrong": {
+        "count": 5,
+        "percentage": 12.195121951219512
+      },
+      "SnapKV Wins": {
+        "count": 0,
+        "percentage": 0.0
+      },
+      "Baseline Wins": {
+        "count": 36,
+        "percentage": 87.8048780487805
+      }
+    }
+  },
+  "llama_32k_w32_c4096_k7_maxpool": {
+    "model": "llama",
+    "context_length": "32k",
+    "cache_config": "w32_c4096_k7_maxpool",
+    "results": {
+      "Both Correct": {
+        "count": 7,
+        "percentage": 17.073170731707318
+      },
+      "Both Wrong": {
+        "count": 5,
+        "percentage": 12.195121951219512
+      },
+      "SnapKV Wins": {
+        "count": 0,
+        "percentage": 0.0
+      },
+      "Baseline Wins": {
+        "count": 29,
+        "percentage": 70.73170731707317
+      }
+    }
+  },
+  "qwen_16k_w32_c1024_k7_maxpool": {
+    "model": "qwen",
+    "context_length": "16k",
+    "cache_config": "w32_c1024_k7_maxpool",
+    "results": {
+      "Both Correct": {
+        "count": 0,
+        "percentage": 0.0
+      },
+      "Both Wrong": {
+        "count": 3,
+        "percentage": 7.317073170731707
+      },
+      "SnapKV Wins": {
+        "count": 0,
+        "percentage": 0.0
+      },
+      "Baseline Wins": {
+        "count": 38,
+        "percentage": 92.6829268292683
+      }
+    }
+  },
+  "qwen_16k_w32_c4096_k7_maxpool": {
+    "model": "qwen",
+    "context_length": "16k",
+    "cache_config": "w32_c4096_k7_maxpool",
+    "results": {
+      "Both Correct": {
+        "count": 0,
+        "percentage": 0.0
+      },
+      "Both Wrong": {
+        "count": 3,
+        "percentage": 7.317073170731707
+      },
+      "SnapKV Wins": {
+        "count": 0,
+        "percentage": 0.0
+      },
+      "Baseline Wins": {
+        "count": 38,
+        "percentage": 92.6829268292683
+      }
+    }
+  },
+  "qwen_32k_w32_c1024_k7_maxpool": {
+    "model": "qwen",
+    "context_length": "32k",
+    "cache_config": "w32_c1024_k7_maxpool",
+    "results": {
+      "Both Correct": {
+        "count": 0,
+        "percentage": 0.0
+      },
+      "Both Wrong": {
+        "count": 8,
+        "percentage": 19.51219512195122
+      },
+      "SnapKV Wins": {
+        "count": 0,
+        "percentage": 0.0
+      },
+      "Baseline Wins": {
+        "count": 33,
+        "percentage": 80.48780487804879
+      }
+    }
+  },
+  "qwen_32k_w32_c4096_k7_maxpool": {
+    "model": "qwen",
+    "context_length": "32k",
+    "cache_config": "w32_c4096_k7_maxpool",
+    "results": {
+      "Both Correct": {
+        "count": 0,
+        "percentage": 0.0
+      },
+      "Both Wrong": {
+        "count": 8,
+        "percentage": 19.51219512195122
+      },
+      "SnapKV Wins": {
+        "count": 0,
+        "percentage": 0.0
+      },
+      "Baseline Wins": {
+        "count": 33,
+        "percentage": 80.48780487804879
+      }
+    }
+  }
+}
