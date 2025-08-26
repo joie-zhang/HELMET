@@ -1,6 +1,7 @@
 import os
 
 from collections import defaultdict
+import re
 import random
 import json
 import time
@@ -11,10 +12,10 @@ import torch
 from torch.utils.data import DataLoader
 
 from arguments import parse_arguments
-from model_utils import load_LLM, OpenAIModel, AnthropicModel
+from model_utils import load_LLM, OpenAIModel, AnthropicModel, TgiVllmModel
 
 from data import (
-    load_data, 
+    load_data,
     TestItemDataset,
 )
 
@@ -43,9 +44,9 @@ def run_test(args, model, dataset, test_file, demo_file):
     logger.info(f"loaded {len(data['data'])} samples from {dataset}")
 
     dataloader = DataLoader(
-        TestItemDataset(data, model, model.tokenizer), 
-        batch_size=1, 
-        shuffle=False, 
+        TestItemDataset(data, model, model.tokenizer),
+        batch_size=1,
+        shuffle=False,
         collate_fn=lambda x: x,
         num_workers=args.num_workers if not args.debug else 0,
     )
@@ -63,11 +64,20 @@ def run_test(args, model, dataset, test_file, demo_file):
             continue
         all_inputs.append(inputs)
         all_input_texts.append(input_text)
-    
+
+    # HY: for the thinking mode, we add additional 32k tokens to allow models to generate thinking process
+    if args.thinking:
+        args.generation_max_length += 32768
+        args.input_max_length += 32768
+        model.max_length = args.input_max_length
+        model.generation_max_length = args.generation_max_length
+        args.stop_newline = False
+        logger.info(f"thinking mode, adding 32k tokens to generation and input max length, also disabling stop_newline")
+
     logger.info("Running generation...")
     start_time = time.time()
     # generate all outputs
-    if isinstance(model, OpenAIModel) or isinstance(model, AnthropicModel):
+    if (isinstance(model, OpenAIModel) or isinstance(model, AnthropicModel)) and (not isinstance(model, TgiVllmModel)):
         # using the batch API makes it cheaper and faster
         logger.info(f"Using the OpenAI/Anthropic batch API by default, if you want to use the iterative API, please change the code")
         all_outputs = model.generate_batch(all_inputs, batch_file=output_path+".batch")
@@ -85,13 +95,19 @@ def run_test(args, model, dataset, test_file, demo_file):
             logger.info(f"skipping example {idx+1} because the model returned None")
             continue
 
-        # If we do not use the chat template, then we are doing completion, and for the sake of parsing, we want to prepend the system prompt to the input. 
+        # If we do not use the chat template, then we are doing completion, and for the sake of parsing, we want to prepend the system prompt to the input.
         # For example, since we are autocompleting "Answer:"" in the input, then we should prepend the system prompt to the output as well.
         # This requires some coordination from the dataset preprocessing
         if not args.use_chat_template:
             prepend_text = data["system_template"].format(**test_item)
             output["output"] = prepend_text + output["output"]
-        
+
+        if args.thinking:
+            matches = re.search(r"(.*</think>)(.*)", output['output'], flags=re.DOTALL)
+            if matches:
+                output["output"] = matches.group(2).strip()
+                output["thoughts"] = matches.group(1).strip()
+
         mets, others = data['post_process'](output, test_item)
         output.update({**others, **mets})
         for k, v in mets.items():
@@ -118,12 +134,14 @@ def run_test(args, model, dataset, test_file, demo_file):
             logger.info(f"Output: {output['output']}")
             logger.info(f"Parsed output: {output['parsed_output']}")
             logger.info(f"Metrics: {mets}")
-        
+
         if args.debug:
             import pdb; pdb.set_trace()
 
-    mem_usage = sum([torch.cuda.max_memory_allocated(i) for i in range(torch.cuda.device_count())])
-    logger.info(f"Memory usage: {mem_usage/1000**3:.02f} GB")
+    if not args.no_cuda:
+        mem_usage = sum([torch.cuda.max_memory_allocated(i) for i in range(torch.cuda.device_count())])
+        logger.info(f"Memory usage: {mem_usage/1000**3:.02f} GB")
+    logger.info(f"Total time: {end_time - start_time:.02f} s")
     logger.info(f"Throughput: {len(results) / (end_time - start_time):.02f} samples/s")
 
     if args.count_tokens:
@@ -145,9 +163,10 @@ def run_test(args, model, dataset, test_file, demo_file):
         "data": results,
         "metrics": metrics,
         "averaged_metrics": averaged_metrics,
-        "memory_usage": mem_usage,
         "throughput": len(results) / (end_time - start_time),
     }
+    if not args.no_cuda:
+        output["memory_usage"] = mem_usage
 
     if args.output_dir is not None:
         with open(output_path, "w") as f:
@@ -187,7 +206,7 @@ def main():
         model.max_length = max_length
         model.generation_max_length = gen_length
 
-        try: 
+        try:
             output_path = run_test(args, model, dataset, test_file, demo_file)
 
             if "alce" in dataset and not args.count_tokens and (not os.path.exists(output_path+".score") or args.overwrite):
@@ -205,7 +224,7 @@ def main():
                 eval_alce.main(cli_args)
 
         except Exception as e:
-            # in case we run into some kind of error 
+            # in case we run into some kind of error
             logger.exception(e)
             logger.error(f"Error in {dataset}, continuing...")
             if args.debug:

@@ -1,12 +1,24 @@
-# HELMET: How to Evaluate Long-context Language Models Effectively and Thoroughly <img src="assets/logo.jpeg" alt="HELMET" width="30">
+# <img src="assets/logo.jpeg" alt="HELMET" width="30"> HELMET: How to Evaluate Long-context Language Models Effectively and Thoroughly
 
 ---
 
-[[Paper](https://arxiv.org/abs/2410.02694)] 
 
-HELMET <img src="assets/logo.jpeg" alt="HELMET" width="30"> (How to Evaluate Long-context Models Effectively and Thoroughly) is a comprehensive benchmark for long-context language models covering seven diverse categories of tasks.
+<p align="center">
+    <a href="https://arxiv.org/abs/2410.02694" target="_blank" rel="noopener noreferrer">
+        <img alt="paper" src="https://img.shields.io/badge/paper-paper?logo=arxiv&logoColor=%23B31B1B&labelColor=white&color=%23B31B1B">
+    </a>
+    <a href="https://princeton-nlp.github.io/HELMET/" target="_blank" rel="noopener noreferrer">
+        <img alt="website" src="https://img.shields.io/badge/website-website?logo=safari&logoColor=%23006CFF&labelColor=white&color=%23006CFF">
+    </a>
+</p>
+
+<img src="assets/logo.jpeg" alt="HELMET" width="30"> HELMET (How to Evaluate Long-context Models Effectively and Thoroughly) is a comprehensive benchmark for long-context language models covering seven diverse categories of tasks.
 The datasets are application-centric and are designed to evaluate models at different lengths and levels of complexity.
 Please check out the paper for more details, and this repo will detail how to run the evaluation.
+
+This repo also supports [LongProc](https://princeton-pli.github.io/LongProc/), our new benchmark for long-context procedural generation.
+Please see [longproc_addon](longproc_addon/README.md) to see how to run the evaluation.
+The overall structure is the same as HELMET, but uses additional data, configs, and evaluation metrics.
 
 
 ## Quick Links
@@ -28,8 +40,8 @@ See `CHANGELOG.md` for updates and more details.
 - [x] HELMET Code
 - [x] HELMET data
 - [x] VLLM Support
+- [x] Correlation analysis notebook
 - [ ] Support >128k input length
-- [ ] Correlation analysis notebook
 - [ ] Retrieval setup
 
 
@@ -41,6 +53,8 @@ python -m venv env
 source env/bin/activate
 pip install -r requirements.txt
 ```
+
+For evaluating on NVIDIA GPUs, please install `flash-attn` by referring to the [flash attention repo](https://github.com/Dao-AILab/flash-attention).
 
 Additionally, if you wish to use the API models, you will need to install the package corresponding to the API you wish to use
 ```bash
@@ -66,30 +80,48 @@ The data is hosted on this Huggingface [repo](https://huggingface.co/datasets/pr
 For Recall, RAG, Passage Re-ranking, and ALCE, we either generate the data ourselves or do retrieval, so these are stored in jsonl files, whereas our script will load the data from Huggingface for the other tasks, LongQA, Summ, and ICL.
 The data also contains the key points extracted for evaluating summarization with model-based evaluation.
 
-In the future, we will add support for simply loading from Huggingface with all the input-outputs formatted, so you can plug in your own evaluation pipeline easily, stay tuned!
+<!-- In the future, we will add support for simply loading from Huggingface with all the input-outputs formatted, so you can plug in your own evaluation pipeline easily, stay tuned! -->
 
 
 ## Running evaluation
 
 To run the evaluation, simply use one of the config files in the `configs` directory, you may also overwrite any arguments in the config file or add new arguments simply through the command line (see `arguments.py`):
 ```bash
-python eval.py --config configs/cite.yaml --model_name_or_path {local model path or huggingface model name} --output_dir {output directory, defaults to output/{model_name}}
+for task in recall rag rerank cite longqa summ icl; do
+  python eval.py --config configs/${task}.yaml \
+    --model_name_or_path {local model path or huggingface model name} \
+    --output_dir {output directory, defaults to output/{model_name}} \
+    --use_chat_template False # only if you are using non-instruction-tuned models, otherwise use the default.
+done
 ```
+
 This will output the results file under the output directory in two files: `.json` contains all the data point details while `.json.score` only contain the aggregated metrics.
-Note: for non-instruction-tuned models (e.g., `Llama-3-8B`), you should ALWAYS set `--use_chat_template False`, the defaults are set for instruction-tuned models.
 
-You may also run the whole suite with a simple bash statement:
+For slurm users, you may find our slurm scripts useful:
 ```bash
-bash scripts/run_eval.sh
-
 # I recommend using these slurm scripts as they contain more details (including all the model names) and can be easily modified to fit your setup
-# you can also run them interactive by replacing sbatch with bash, check out the file for more details
-sbatch scripts/run_eval_slurm.sh
-sbatch scripts/run_short_slurm.sh
+# you can also run them in your shell by replacing sbatch with bash, check out the file for more details
+sbatch scripts/run_eval_slurm.sh # 128k
+sbatch scripts/run_short_slurm.sh # 8k-64k
 
-# for the API models, note that API models results may vary due to the randomness in the API calls
+# for the API models, note that API results may vary due to the randomness in the API calls
 bash scripts/run_api.sh 
 ```
+### Run on Intel Gaudi Accelerators
+If you want to enable the evaluation on vLLM with Intel Gaudi, you can use the following commands:
+```bash
+## Build vllm docker image
+cd scripts/vllm-gaudi
+bash build_image.sh
+
+## launch vllm container, change `LLM_MODEL_ID` and `NUM_CARDS` as your need
+bash launch_container.sh
+
+## evalute
+cd ../../
+bash scripts/run_eval_vllm_gaudi.sh
+```
+
 Check out the script file for more details!
 See [Others](#others) for the slurm scripts, easily collecting all the results, and using VLLM.
 
@@ -103,16 +135,16 @@ See [Contacts](#contacts) for my email.
 
 To run the model-based evaluation for LongQA and Summarization, please make sure that you have set the environmental variables for OpenAI so you can make calls to GPT-4o, then you can run:
 ```bash
-python scripts/eval_gpt4_longqa.py
-python scripts/eval_gpt4_summ.py
+# by default, we assume all output files are stored in output/{model_name}
+python scripts/eval_gpt4_longqa.py --model_name_or_path {local model path or huggingface model name} --tag {tag for the model}
+python scripts/eval_gpt4_summ.py --model_name_or_path {local model path or huggingface model name} --tag {tag for the model}
 
 # Alternatively, if you want to shard the process
 bash scripts/eval_gpt4_longqa.sh
 bash scripts/eval_gpt4_summ.sh
 ```
 
-To specify which model/paths you want to run model-based evaluation for, check out the python scripts and modify the `model_to_check` field.
-You may also use Claude, Gemini, or other models for model-based evaluation by modifying the class but we have tested for `gpt-4o-2024-05-13`.
+<!-- You may also use Claude, Gemini, or other models for model-based evaluation by modifying the class but we have tested for `gpt-4o-2024-05-13`. -->
 
 ## Adding new models
 
@@ -232,14 +264,11 @@ If you encounter any problems, you can also open an issue here. Please try to sp
 
 If you find our work useful, please cite us:
 ```
-@misc{yen2024helmet,
+@inproceedings{yen2025helmet,
       title={HELMET: How to Evaluate Long-Context Language Models Effectively and Thoroughly}, 
       author={Howard Yen and Tianyu Gao and Minmin Hou and Ke Ding and Daniel Fleischer and Peter Izsak and Moshe Wasserblat and Danqi Chen},
-      year={2024},
-      eprint={2410.02694},
-      archivePrefix={arXiv},
-      primaryClass={cs.CL},
-      url={https://arxiv.org/abs/2410.02694}, 
+      year={2025},
+      booktitle={International Conference on Learning Representations (ICLR)},
 }
 ```
 
@@ -558,6 +587,13 @@ Please also cite the original dataset creators, listed below:
     url = "https://aclanthology.org/D19-1131",
     doi = "10.18653/v1/D19-1131",
     pages = "1311--1316",
+}
+
+@article{ye25longproc,
+    title={LongProc: Benchmarking Long-Context Language Models on Long Procedural Generation},
+    author={Ye, Xi and Yin, Fangcong and He, Yinghui and Zhang, Joie and Yen, Howard and Gao, Tianyu and Durrett, Greg and Chen, Danqi},
+    journal={arXiv preprint},
+    year={2025}
 }
 ```
 

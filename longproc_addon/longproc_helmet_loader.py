@@ -3,7 +3,7 @@ from datasets import Dataset as HFDataset
 try:
     from .longproc.longproc.longproc_data import load_longproc_data
 except ImportError:
-    pass
+    raise ImportError("LongProc cannot be loaded.")
 
 
 def load_longproc_data_for_helmet(dataset: str, path="longproc_addon/longproc/data", max_test_samples=None, seed=42):

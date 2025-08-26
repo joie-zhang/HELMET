@@ -18,6 +18,11 @@ def parse_arguments():
     # model setting
     parser.add_argument("--model_name_or_path", type=str, default=None)
     parser.add_argument("--use_vllm", action="store_true", help="whether to use vllm engine")
+    parser.add_argument("--use_sglang", action="store_true", help="whether to use sglang engine")
+    parser.add_argument("--use_vllm_serving", action="store_true", help="whether to use vllm serving engine")
+    parser.add_argument("--use_tgi_serving", action="store_true", help="whether to use tgi serving engine")
+    parser.add_argument("--endpoint_url", type=str,default="http://localhost:8080/v1/", help="endpoint url for tgi or vllm serving engine")
+    parser.add_argument("--api_key", type=str, default="EMPTY", help="api key for model endpoint")
 
     # data settings
     parser.add_argument("--datasets", type=str, default=None, help="comma separated list of dataset names")
@@ -41,7 +46,8 @@ def parse_arguments():
     parser.add_argument("--generation_min_length", type=int, default=0, help="min number of tokens to generate")
     parser.add_argument("--temperature", type=float, default=0.0, help="generation temperature")
     parser.add_argument("--top_p", type=float, default=1.0, help="top-p parameter for nucleus sampling")
-    parser.add_argument("--stop_newline", type=ast.literal_eval, choices=[True, False], default=False, help="whether to stop generation at newline")
+    parser.add_argument("--stop_new_line", type=ast.literal_eval, choices=[True, False], default=False, help="whether to stop generation at newline")
+    parser.add_argument("--system_message", type=str, default=None, help="system message to add to the beginning of context")
 
     # model specific settings
     parser.add_argument("--seed", type=int, default=42, help="random seed")
@@ -50,6 +56,7 @@ def parse_arguments():
     parser.add_argument("--no_torch_compile", action="store_true", help="disable torchcompile")
     parser.add_argument("--use_chat_template", type=ast.literal_eval, choices=[True, False], default=False, help="whether to use chat template")
     parser.add_argument("--rope_theta", type=int, default=None, help="override rope theta")
+    parser.add_argument("--thinking", action="store_true", help="for reasoning models (e.g., Deepseek-r1), when this is set, we allow the model to generate an additional 32k tokens and exclude all texts between <think>*</think> from the output for evaluation")
     parser.add_argument("--quantize", type=int, default=16, help="4, 8, or 16 bit quantization")
     
     # Create a mutually exclusive sgroup for the different efficient inference methods

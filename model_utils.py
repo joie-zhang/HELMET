@@ -18,15 +18,14 @@ logger.setLevel(logging.INFO)
 
 
 def format_chat(
-    message: str, 
-    include_system: bool=False, 
-    system_message: str="You are a helpful assistant."
+    message: str,
+    system_message: Optional[str]=None,
 ) -> List[Dict[str, str]]:
     """
     Format the message into a list of dictionaries with role and content keys.
     This is useful for the chat-based models without tokenizer that does this.
     """
-    if include_system:
+    if system_message is not None:
         chat = [
             {"role": "system", "content": system_message},
             {"role": "user", "content": message},
@@ -75,8 +74,9 @@ class LLM:
         generation_max_length: int=2048,
         generation_min_length: int=0,
         do_sample: bool=True,
-        stop_newline: bool=False,
+        stop_new_line: bool=False,
         use_chat_template: bool=False,
+        system_message: Optional[str]="You are a helpful assistant.",
         quantize: int=16,
     ):
         self.model_name = model_name
@@ -87,19 +87,20 @@ class LLM:
         self.generation_min_length = generation_min_length
         self.do_sample = do_sample
         self.use_chat_template = use_chat_template
+        self.system_message = system_message
         self.stops = None
         self.quantize = quantize
-        if stop_newline:
+        if stop_new_line:
             self.stops = ["\n", "\n\n"]
 
     """
     Prepare the data for input to the llm
-    
+
     test_item: dict[str, any]
         the test item to be used for the generation, this dictionary is from the data preprocessing step and are used for further formatting to specific models, such as tokenization and/or chat formatting
     data: dict[str, any]
         the data dictionary that contains the template for the user message and system
-    
+
     Returns the prepared input (type is model-specific)
     """
     def prepare_inputs(self, test_item: Dict[str, Any], data: Dict[str, Any]) -> Any:
@@ -119,7 +120,7 @@ class LLM:
      - "input_text" (str or List[Dict[str, str]]): the input text or the chat format
     There may be additional keys depending on the model.
     This function may also return None in case of errors (e.g., denied by the API provider).
-    
+
     """
     def generate(self, inputs: Optional[Any]=None, prompt: Optional[str]=None, **kwargs) -> Optional[Dict[str, Any]]:
         raise NotImplementedError("generate not implemented for LLM")
@@ -151,8 +152,9 @@ class OpenAIModel(LLM):
         generation_max_length=2048,
         generation_min_length=0,
         do_sample=True,
-        stop_newline=False,
+        stop_new_line=False,
         use_chat_template=True,
+        system_message=None,
         seed=42,
         **kwargs,
     ):
@@ -164,8 +166,9 @@ class OpenAIModel(LLM):
             generation_max_length=generation_max_length,
             generation_min_length=generation_min_length,
             do_sample=do_sample,
-            stop_newline=stop_newline,
+            stop_new_line=stop_new_line,
             use_chat_template=use_chat_template,
+            system_message=system_message,
         )
         import openai
         import tiktoken
@@ -184,8 +187,8 @@ class OpenAIModel(LLM):
 
     def prepare_inputs(self, test_item, data):
         buffer = 100
-        # we don't include system message to stay consistent with other models
-        prompt = format_chat(data["user_template"].format(**test_item), include_system=False,)
+        # we don't include system message to stay consistent with other models, which defaults to None
+        prompt = format_chat(data["user_template"].format(**test_item), system_message=self.system_message)
         inputs = "\n".join([f"Role: {x['role']}\nContent: {x['content']}" for x in prompt])
         tokens = self.tokenizer.encode(inputs)
         input_len = len(tokens)
@@ -198,13 +201,14 @@ class OpenAIModel(LLM):
             truncate_length = input_len - (self.max_length - self.generation_max_length - buffer)
             new_context = self.tokenizer.decode(self.tokenizer.encode(test_item["context"])[:-truncate_length])
             test_item["context"] = new_context
-            prompt = format_chat(data["user_template"].format(**test_item), include_system=False)
+            prompt = format_chat(data["user_template"].format(**test_item), system_message=self.system_message)
         return prompt
 
 
-    def generate(self, inputs=None, prompt=None, system_message="You are a helpful assistant.", **kwargs):
+    def generate(self, inputs=None, prompt=None, **kwargs):
         if inputs is None:
-            inputs = format_chat(prompt, include_system=True, system_message=system_message)
+            # for system_message, set the self.system_message attribute
+            inputs = format_chat(prompt, system_message=self.system_message)
 
         # kwargs can be used to pass additional parameters to the model: max_tokens, stop, etc.
         func = functools.partial(
@@ -231,7 +235,7 @@ class OpenAIModel(LLM):
                 "system_fingerprint": output.system_fingerprint,
             }
         return None
-    
+
     def batch_api(self, inputs, batch_file, **kwargs):
         with open(batch_file, "w") as f:
             for idx, p in enumerate(inputs):
@@ -285,7 +289,7 @@ class OpenAIModel(LLM):
         return outputs
 
 
-    def generate_batch(self, inputs=None, prompt=None, system_message="You are a helpful assistant.", **kwargs):
+    def generate_batch(self, inputs=None, prompt=None, **kwargs):
         """
         Generate for a batch of inputs.
         There are two methods:
@@ -299,7 +303,7 @@ class OpenAIModel(LLM):
             # use the batch api, which only supports upto 50k requests/lines and 200MB in size
             logger.info(f"Using {batch_file} for batch generation")
             if inputs is None:
-                inputs = [format_chat(p, include_system=True, system_message=system_message) for p in prompt]
+                inputs = [format_chat(p, system_message=self.system_message) for p in prompt]
 
             try:
                 outputs = self.batch_api(inputs, batch_file, **kwargs)
@@ -310,19 +314,84 @@ class OpenAIModel(LLM):
                 outputs = []
                 for i in range(0, len(inputs), batch_size):
                     outputs.extend(self.batch_api(inputs[i:i+batch_size], batch_file, **kwargs))
-            
+
         else:
             if inputs is None:
                 inputs = [None for _ in prompt]
             else:
                 prompt = [None for _ in inputs]
-            sys_msgs = [system_message for _ in prompt]
 
             # we don't support kwargs here for now
             if len(kwargs) > 0:
                 logger.warning("kwargs are not supported for batch generation")
             # use thread_map instead of process_map since the bottleneck is the api call
-            outputs = thread_map(self.generate, inputs, prompt, sys_msgs, max_workers=32)
+            outputs = thread_map(self.generate, inputs, prompt, max_workers=32)
+
+        return outputs
+
+class TgiVllmModel(OpenAIModel):
+    def __init__(
+        self, 
+        model_name, 
+        temperature=0.9, 
+        top_p=0.9, 
+        max_length=32768, 
+        generation_max_length=2048, 
+        generation_min_length=0, 
+        do_sample=True, 
+        stop_new_line=False, 
+        use_chat_template=True, 
+        system_message=None,
+        seed=42,
+        **kwargs
+    ):
+        self.model_name = model_name
+        self.temperature = temperature
+        self.top_p = top_p
+        self.max_length = max_length
+        self.generation_max_length = generation_max_length
+        self.generation_min_length = generation_min_length
+        self.do_sample = do_sample
+        self.use_chat_template = use_chat_template
+        self.system_message = system_message
+        self.stops = None
+        if stop_new_line:
+            self.stops = ["\n", "\n\n"]
+        
+        from openai import OpenAI
+        from transformers import AutoTokenizer
+        
+        endpoint_url = kwargs["endpoint_url"]
+        print(f"** Endpoint URL: {endpoint_url}")
+
+        self.model = OpenAI(
+                base_url=endpoint_url,
+                api_key=kwargs["api_key"],
+            )
+        if "tgi" in model_name:
+            # remove the tgi: prefix
+            model_name = model_name[model_name.index(":")+1:]
+            print(f"** Model: {model_name}")
+            self.model_name = "tgi"
+            self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+        else:
+            print(f"** Model: {model_name}")
+            self.model_name = model_name
+            self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+        self.seed = seed
+        self.API_MAX_LENGTH = float('inf')
+
+    def generate_batch(self, inputs=None, prompt=None, **kwargs):
+        if inputs is None:
+            inputs = [None for _ in prompt]
+        else:
+            prompt = [None for _ in inputs]
+
+        # we don't support kwargs here for now
+        if len(kwargs) > 0:
+            logger.warning("kwargs are not supported for batch generation")
+        # use thread_map instead of process_map since the bottleneck is the api call
+        outputs = thread_map(self.generate, inputs, prompt, max_workers=32)
 
         return outputs
 
@@ -337,8 +406,9 @@ class AnthropicModel(LLM):
         generation_max_length=2048,
         generation_min_length=0,
         do_sample=True,
-        stop_newline=False,
+        stop_new_line=False,
         use_chat_template=True,
+        system_message=None,
         **kwargs,
     ):
         super().__init__(
@@ -349,8 +419,9 @@ class AnthropicModel(LLM):
             generation_max_length=generation_max_length,
             generation_min_length=generation_min_length,
             do_sample=do_sample,
-            stop_newline=stop_newline,
+            stop_new_line=stop_new_line,
             use_chat_template=use_chat_template,
+            system_message=system_message,
         )
         from anthropic import Anthropic, AnthropicVertex
         if "vertex" in model_name:
@@ -373,16 +444,17 @@ class AnthropicModel(LLM):
         self.generation_max_length = generation_max_length
         self.do_sample = do_sample
         self.stops = None
-        if stop_newline: # claude does not support newline
+        if stop_new_line: # claude does not support newline
             pass
+        if self.system_message is None:
+            # claude expects string as system message
+            self.system_message = ""
 
 
     def prepare_inputs(self, test_item, data):
         buffer = 100
-        prompt = format_chat(
-            data["user_template"].format(**test_item),
-            include_system=False,
-        )
+        # for anthropic, the system message is passed through the function not in the prompt
+        prompt = format_chat(data["user_template"].format(**test_item), system_message=None)
         inputs = "\n".join([f"Role: {x['role']}\nContent: {x['content']}" for x in prompt])
         tokens = self.tokenizer.encode(inputs)
         input_len = len(tokens)
@@ -392,22 +464,20 @@ class AnthropicModel(LLM):
             tokens = self.tokenizer.encode(test_item["context"])
             new_context = test_item["context"][:tokens.offsets[-truncate_length-1][1]]
             test_item["context"] = new_context
-            prompt = format_chat(
-                data["user_template"].format(**test_item),
-                include_system=False,
-            )
+            prompt = format_chat(data["user_template"].format(**test_item), system_message=None)
         return prompt
 
 
-    def generate(self, inputs=None, prompt=None, system_message="You are a helpful assistant.", **kwargs):
+    def generate(self, inputs=None, prompt=None, **kwargs):
         if inputs is None:
-            inputs = format_chat(prompt, include_system=False)
+            inputs = format_chat(prompt, system_message=None)
 
         # kwargs can be used to pass additional parameters to the model: max_tokens, stop, etc.
         # Note: in the original paper, we used this system message:
         # system="You are a helpful assistant. Make sure your output does not contain new lines."
         # To be consistent with the other models, and for future compability, we remove the system message
         # We don't expect this to make a significant difference in the results
+        print(inputs)
         func = functools.partial(
             self.model.messages.create,
             model=self.model_name,
@@ -416,7 +486,7 @@ class AnthropicModel(LLM):
             temperature=self.temperature if self.do_sample else 0.0,
             top_p=self.top_p,
             stop_sequences=self.stops,
-            system=system_message,
+            system=self.system_message,
             **kwargs,
         )
         output = call_api(func, pause=20)
@@ -431,7 +501,7 @@ class AnthropicModel(LLM):
         return None
 
 
-    def batch_api(self, inputs, system_message="You are a helpful assistant.", **kwargs):
+    def batch_api(self, inputs, **kwargs):
         # this should be faster and costs 50%, but each batch cannot exceed 100k requests or 256MB
         # https://docs.anthropic.com/en/docs/build-with-claude/message-batches
         from anthropic.types.message_create_params import MessageCreateParamsNonStreaming
@@ -447,7 +517,7 @@ class AnthropicModel(LLM):
                     temperature=self.temperature if self.do_sample else 0.0,
                     top_p=self.top_p,
                     stop_sequences=self.stops,
-                    system=system_message,
+                    system=self.system_message,
                     **kwargs,
                 )
             ))
@@ -474,15 +544,15 @@ class AnthropicModel(LLM):
         return outputs
 
 
-    def generate_batch(self, inputs=None, prompt=None, system_message="You are a helpful assistant.", **kwargs):
+    def generate_batch(self, inputs=None, prompt=None, **kwargs):
         batch_file = kwargs.pop("batch_file", None)
-        
+
         if batch_file:
             if inputs is None:
-                inputs = [format_chat(p, include_system=False) for p in prompt]
+                inputs = [format_chat(p, system_message=None) for p in prompt]
 
             try:
-                outputs = self.batch_api(inputs, system_message=system_message, **kwargs)
+                outputs = self.batch_api(inputs, **kwargs)
             except Exception as e:
                 # one possible error is that the file is too large, so we need to split it
                 batch_size = 100
@@ -490,19 +560,18 @@ class AnthropicModel(LLM):
                 outputs = []
                 for i in range(0, len(inputs), batch_size):
                     outputs.extend(self.batch_api(inputs[i:i+batch_size], batch_file, **kwargs))
-        
-        else: 
+
+        else:
             if inputs is None:
                 inputs = [None for _ in prompt]
             else:
                 prompt = [None for _ in inputs]
-            sys_msgs = [system_message for _ in prompt]
 
             # we don't support kwargs here for now
             if len(kwargs) > 0:
                 logger.warning("kwargs are not supported for batch generation")
             # use thread_map instead of process_map since the bottleneck is the api call
-            outputs = thread_map(self.generate, inputs, prompt, sys_msgs, max_workers=32)
+            outputs = thread_map(self.generate, inputs, prompt, max_workers=2)
 
         return outputs
 
@@ -517,8 +586,9 @@ class GeminiModel(LLM):
         generation_max_length=2048,
         generation_min_length=0,
         do_sample=True,
-        stop_newline=False,
+        stop_new_line=False,
         use_chat_template=True,
+        system_message=None,
         **kwargs,
     ):
         super().__init__(
@@ -531,6 +601,7 @@ class GeminiModel(LLM):
             do_sample=do_sample,
             stop_newline=stop_newline,
             use_chat_template=use_chat_template,
+            system_message=system_message,
         )
 
         import google.generativeai as genai
@@ -543,6 +614,8 @@ class GeminiModel(LLM):
         self.model = genai.GenerativeModel(model_name)
         self.tokenizer = get_tokenizer_for_model(model_name)
         self.model_name = model_name
+        if system_message is not None:
+            logger.warning("system_message is not supported for GeminiModel")
 
 
     def prepare_inputs(self, test_item, data):
@@ -592,7 +665,7 @@ class GeminiModel(LLM):
                 "input_text": inputs,
             }
         return None
-    
+
 
     def generate_batch(self, inputs=None, prompt=None, **kwargs):
         if inputs is None:
@@ -619,8 +692,9 @@ class TogetherModel(LLM):
         generation_max_length=2048,
         generation_min_length=0,
         do_sample=True,
-        stop_newline=False,
+        stop_new_line=False,
         use_chat_template=True,
+        system_message=None,
         **kwargs,
     ):
         super().__init__(
@@ -633,23 +707,27 @@ class TogetherModel(LLM):
             do_sample=do_sample,
             stop_newline=stop_newline,
             use_chat_template=use_chat_template,
+            system_message=system_message,
         )
 
         from transformers import AutoTokenizer
         from together import Together
         # default env var TOGETHER_API_KEY
         self.model = Together()
-        # should change this to be more flexible in the future lol
-        self.tokenizer = AutoTokenizer.from_pretrained("meta-llama/Meta-Llama-3.1-405B-Instruct")
         self.model_name = model_name.replace("togetherapi/", "")
+        # you should add the mapping from the TogetherAPI model name to the Hugging Face model name to get the tokenizer
+        # alternatively, you can use another model with similar tokenizer if the one you are using is not open-source
+        name_mapping = {
+            "meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo": "meta-llama/Meta-Llama-3.1-405B-Instruct",
+            "deepseek-ai/DeepSeek-V3": "deepseek-ai/DeepSeek-V3",
+            "deepseek-ai/DeepSeek-R1": "deepseek-ai/DeepSeek-R1",
+        }
+        self.tokenizer = AutoTokenizer.from_pretrained(name_mapping[self.model_name])
 
 
     def prepare_inputs(self, test_item, data):
         buffer = 100
-        prompt = format_chat(
-            data["user_template"].format(**test_item),
-            system_message=data.get("system_message", "You are a helpful assistant.")
-        )
+        prompt = format_chat(data["user_template"].format(**test_item), system_message=self.system_message)
         tokens = self.tokenizer.apply_chat_template(prompt, tokenize=True, add_generation_prompt=True)
         input_len = len(tokens)
 
@@ -660,16 +738,13 @@ class TogetherModel(LLM):
             new_context = test_item["context"][:context_tokens["offset_mapping"][-truncate_length][0]]
 
             test_item["context"] = new_context
-            prompt = format_chat(
-                data["user_template"].format(**test_item),
-                system_message=data.get("system_message", "You are a helpful assistant.")
-            )
+            prompt = format_chat(data["user_template"].format(**test_item), system_message=self.system_message)
         return prompt
 
-    
-    def generate(self, inputs=None, prompt=None, system_message="You are a helpful assistant.", **kwargs):
+
+    def generate(self, inputs=None, prompt=None, **kwargs):
         if inputs is None:
-            inputs = format_chat(prompt, include_system=True, system_message=system_message)
+            inputs = format_chat(prompt, system_message=self.system_message)
 
         # kwargs can be used to pass additional parameters to the model: max_tokens, stop, etc.
         func = functools.partial(
@@ -694,45 +769,44 @@ class TogetherModel(LLM):
                 "input_text": inputs,
             }
         return None
-        
-        
-    def generate_batch(self, inputs=None, prompt=None, system_message="You are a helpful assistant.", **kwargs):
+
+
+    def generate_batch(self, inputs=None, prompt=None, **kwargs):
         if inputs is None:
             inputs = [None for _ in prompt]
         else:
             prompt = [None for _ in inputs]
-        sys_msgs = [system_message for _ in prompt]
 
         # we don't support kwargs here for now
         if len(kwargs) > 0:
             logger.warning("kwargs are not supported for batch generation")
         # use thread_map instead of process_map since the bottleneck is the api call
-        outputs = thread_map(self.generate, inputs, prompt, sys_msgs, max_workers=32)
+        outputs = thread_map(self.generate, inputs, prompt, max_workers=32)
 
         return outputs
 
 
 def tokenize(
-    sample: Dict[str, Any], 
-    data: Dict[str, Any], 
-    tokenizer, 
-    max_length: int, 
-    generation_max_length: int, 
+    sample: Dict[str, Any],
+    data: Dict[str, Any],
+    tokenizer,
+    max_length: int,
+    generation_max_length: int,
     use_chat_template: bool=False,
     continue_final_message: bool=False,
+    system_message: Optional[str]="You are a helpful assistant.",
 ):
     """
     Tokenize the input for HF-based models.
     """
     if continue_final_message:
         assert use_chat_template
-    
+
     def format_input(sample):
         if use_chat_template:
             chat = format_chat(
                 data["user_template"].format(**sample),
-                include_system=True,
-                system_message=data.get("system_message", "You are a helpful assistant.")
+                system_message=system_message,
             )
             if continue_final_message:
                 chat.append({"role": "assistant", "content": data['system_template'].format(**sample)})
@@ -740,10 +814,8 @@ def tokenize(
                 # sometimes the tokenizer doesn't support system message
                 prompt = tokenizer.apply_chat_template(chat, tokenize=False, add_generation_prompt=not continue_final_message, continue_final_message=continue_final_message)
             except Exception as e:
-                chat = format_chat(
-                    data["user_template"].format(**sample),
-                    include_system=False,
-                )
+                # so we exclude the system message
+                chat = format_chat(data["user_template"].format(**sample), system_message=None)
                 if continue_final_message:
                     chat.append({"role": "assistant", "content": data['system_template'].format(**sample)})
                 prompt = tokenizer.apply_chat_template(chat, tokenize=False, add_generation_prompt=not continue_final_message, continue_final_message=continue_final_message)
@@ -786,8 +858,9 @@ class HFModel(LLM):
         generation_max_length=2048,
         generation_min_length=0,
         do_sample=True,
-        stop_newline=False,
+        stop_new_line=False,
         use_chat_template=False,
+        system_message=None,
         seed=42,
         quantize=16,
         **kwargs,
@@ -802,6 +875,7 @@ class HFModel(LLM):
             do_sample=do_sample,
             stop_newline=stop_newline,
             use_chat_template=use_chat_template,
+            system_message=system_message,
             quantize=quantize,
         )
         set_seed(seed)
@@ -814,7 +888,7 @@ class HFModel(LLM):
             model_kwargs["use_flash_attention_2"] = True
         else:
             model_kwargs["attn_implementation"] = kwargs.get("attn_implementation", "flash_attention_2")
-        
+
         FLASH_ATTN_NOT_SUPPORTED = ["recurrentgemma", "yarn"]
         if any([x in model_name.lower() for x in FLASH_ATTN_NOT_SUPPORTED]):
             model_kwargs = {}
@@ -936,6 +1010,7 @@ class HFModel(LLM):
 
         if kwargs.get("torch_compile", True):
             self.model = torch.compile(self.model)
+            # https://huggingface.co/docs/transformers/en/llm_optims?static-kv=basic+usage%3A+generation_config#static-kv-cache-and-torchcompile
             # self.model.forward = torch.compile(self.model.forward, mode="reduce-overhead", fullgraph=True)
 
         # use the default if possible, append if necessary
@@ -964,6 +1039,7 @@ class HFModel(LLM):
             max_length=self.max_length,
             generation_max_length=self.generation_max_length,
             use_chat_template=self.use_chat_template,
+            system_message=self.system_message,
         )
 
 
@@ -972,16 +1048,17 @@ class HFModel(LLM):
         if inputs is None:
             assert prompt is not None
             if self.use_chat_template and isinstance(prompt, str):
-                chat = format_chat(prompt, include_system=False)
-                prompt = self.tokenizer.apply_chat_template(chat, tokenize=False, add_generation_prompt=True)
-            inputs = self.tokenizer([prompt], return_tensors="pt", max_length=self.max_length-self.generation_max_length, truncation=True, padding=True)
+                chat = format_chat(prompt, system_message=self.system_message)
+                inputs = self.tokenizer.apply_chat_template(chat, tokenize=True, add_generation_prompt=True, return_tensors="pt", max_length=self.max_length-self.generation_max_length, truncation=True, padding=True)
+            else:
+                inputs = self.tokenizer([prompt], return_tensors="pt", max_length=self.max_length-self.generation_max_length, truncation=True, padding=True)
 
         inputs = inputs.to(self.model.device)
         input_len = inputs.input_ids.size(1)
         if hasattr(self.model, "model") and not self.disable_prefill:
             from transformers import BatchEncoding
             # prefill without calculating the logits (save memory for large vocab models)
-            # one could also do prefilling by chunks, which would save more memory but is more complex and slower 
+            # one could also do prefilling by chunks, which would save more memory but is more complex and slower
             extra = {}
             if "jamba" in str(type(self.model)).lower():
                 from transformers.models.jamba.modeling_jamba import HybridMambaAttentionDynamicCache
@@ -1015,7 +1092,7 @@ class HFModel(LLM):
         # free up some gpu memory
         del inputs
         del outputs
-        
+
         return {
             "output": text,
             "input_len": input_len,
@@ -1040,8 +1117,9 @@ class VLLMModel(LLM):
         generation_max_length=2048,
         generation_min_length=0,
         do_sample=True,
-        stop_newline=False,
+        stop_new_line=False,
         use_chat_template=False,
+        system_message=None,
         seed=42,
     ):
         super().__init__(
@@ -1052,8 +1130,9 @@ class VLLMModel(LLM):
             generation_max_length=generation_max_length,
             generation_min_length=generation_min_length,
             do_sample=do_sample,
-            stop_newline=stop_newline,
+            stop_new_line=stop_new_line,
             use_chat_template=use_chat_template,
+            system_message=system_message,
         )
 
         from vllm import LLM
@@ -1071,6 +1150,10 @@ class VLLMModel(LLM):
         )
         self.tokenizer = self.model.get_tokenizer()
 
+        if self.tokenizer.pad_token is None:
+            self.tokenizer.pad_token = self.tokenizer.eos_token
+            self.tokenizer.pad_token_id = self.tokenizer.eos_token_id
+
 
     def prepare_inputs(self, test_item, data):
         return tokenize(
@@ -1080,6 +1163,7 @@ class VLLMModel(LLM):
             max_length=self.max_length,
             generation_max_length=self.generation_max_length,
             use_chat_template=self.use_chat_template,
+            system_message=self.system_message,
         )
 
 
@@ -1088,14 +1172,17 @@ class VLLMModel(LLM):
         if inputs is None:
             assert prompt is not None
             if self.use_chat_template and isinstance(prompt, str):
-                chat = format_chat(prompt, include_system=False)
-                prompt = self.tokenizer.apply_chat_template(chat, tokenize=False, add_generation_prompt=True)
-            inputs = self.tokenizer([prompt], return_tensors="pt", max_length=self.max_length-self.generation_max_length, truncation=True)
+                chat = format_chat(prompt, system_message=self.system_message)
+                inputs = self.tokenizer.apply_chat_template(chat, tokenize=True, add_generation_prompt=True, return_tensors="pt", max_length=self.max_length-self.generation_max_length, truncation=True, padding=True)
+                inputs = {'input_ids': inputs}
+            else:
+                inputs = self.tokenizer([prompt], return_tensors="pt", max_length=self.max_length-self.generation_max_length, truncation=True, padding=True)
 
         self.sampling_params = SamplingParams(
             temperature = self.temperature if self.do_sample else 0.0,
             top_p = self.top_p,
             max_tokens = self.generation_max_length,
+            stop=self.stops,
         )
 
         outputs = self.model.generate(
@@ -1111,27 +1198,37 @@ class VLLMModel(LLM):
             "input_text": save_prompt,
         }
 
-    
+
     def generate_batch(self, inputs: Optional[List[dict[str, any]]]=None, prompt: Optional[List[str]]=None, **kwargs):
         from vllm import SamplingParams, TokensPrompt
         if inputs is None:
+            start_time = time.time()
             assert prompt is not None
             if self.use_chat_template:
-                chats = [format_chat(p, include_system=False) for p in prompt]
-                prompt = [self.tokenizer.apply_chat_template(chat, tokenize=False, add_generation_prompt=True) for chat in chats]
-            inputs = [self.tokenizer(p, truncation=True, max_length=self.max_length - self.generation_max_length, return_tensors='pt') for p in prompt]
-        
+                chat = [format_chat(p, system_message=self.system_message) for p in prompt]
+                inputs = [self.tokenizer.apply_chat_template(c, tokenize=True, add_generation_prompt=True, max_length=self.max_length-self.generation_max_length, truncation=True, padding=True, return_tensors="pt") for c in chat]
+                inputs = [{'input_ids': i} for i in inputs]
+            else:
+                # we return tensor here because the tokenize function returns tensors, should be consistent
+                inputs = [self.tokenizer(p, truncation=True, max_length=self.max_length - self.generation_max_length, return_tensors='pt') for p in prompt]
+            end_time = time.time()
+            logger.info(f"Finished preparing inputs for {len(inputs)} samples in {end_time - start_time} seconds")
+
         self.sampling_params = SamplingParams(
             temperature = self.temperature if self.do_sample else 0.0,
             top_p = self.top_p,
             max_tokens = self.generation_max_length,
+            stop=self.stops,
         )
-        
+
+        start_time = time.time()
         outputs = self.model.generate(
             prompts=[TokensPrompt(prompt_token_ids=i['input_ids'][0].tolist()) for i in inputs],
             sampling_params=self.sampling_params,
             **kwargs
         )
+        end_time = time.time()
+        logger.info(f"Finished batch generation for {len(inputs)} samples in {end_time - start_time} seconds")
 
         return [
             {
@@ -1140,6 +1237,119 @@ class VLLMModel(LLM):
                 "output_len": len(output.outputs[0].token_ids),
                 'input_text': (self.tokenizer.decode(output.prompt_token_ids[:500]) + " <skip> " + self.tokenizer.decode(output.prompt_token_ids[-500:])) if len(output.prompt_token_ids) > 1000 else self.tokenizer.decode(output.prompt_token_ids),
             } for output in outputs
+        ]
+
+
+class SGLangModel(LLM):
+    def __init__(
+        self,
+        model_name,
+        temperature=0.9,
+        top_p=0.9,
+        max_length=32768,
+        generation_max_length=2048,
+        generation_min_length=0,
+        do_sample=True,
+        stop_new_line=False,
+        use_chat_template=False,
+        system_message=None,
+        seed=42,
+    ):
+        super().__init__(
+            model_name,
+            temperature=temperature,
+            top_p=top_p,
+            max_length=max_length,
+            generation_max_length=generation_max_length,
+            generation_min_length=generation_min_length,
+            do_sample=do_sample,
+            stop_new_line=stop_new_line,
+            use_chat_template=use_chat_template,
+            system_message=system_message,
+        )
+
+        import sglang as sgl
+        self.model = sgl.Engine(
+            model_path=model_name,
+            dtype="bfloat16",
+            context_length=max_length,
+            random_seed=seed,
+            show_time_cost=True,
+            decode_log_interval=1000,
+            log_level="info",
+        )
+        self.tokenizer = self.model.tokenizer_manager.tokenizer
+
+        if self.tokenizer.pad_token is None:
+            self.tokenizer.pad_token = self.tokenizer.eos_token
+            self.tokenizer.pad_token_id = self.tokenizer.eos_token_id
+
+
+    def generate(self, inputs=None, prompt: str=None, **kwargs):
+        if inputs is None:
+            assert prompt is not None
+            if self.use_chat_template and isinstance(prompt, str):
+                chat = format_chat(prompt, system_message=self.system_message)
+                inputs = self.tokenizer.apply_chat_template(chat, tokenize=True, add_generation_prompt=True, max_length=self.max_length-self.generation_max_length, truncation=True, padding=True)
+                inputs = {'input_ids': inputs}
+            else:
+                inputs = self.tokenizer([prompt], max_length=self.max_length-self.generation_max_length, truncation=True)
+
+        self.sampling_params = {
+            "temperature": self.temperature if self.do_sample else 0.0,
+            "top_p": self.top_p,
+            "max_new_tokens": self.generation_max_length,
+            "stop": self.stops,
+        }
+
+        outputs = self.model.generate(
+            input_ids=inputs["input_ids"],
+            sampling_params=self.sampling_params,
+            **kwargs
+        )[0]
+        save_prompt = (self.tokenizer.decode(inputs["input_ids"][0][:500]) + " <skip> " + self.tokenizer.decode(inputs["input_ids"][0][-500:])) if len(inputs["input_ids"][0]) > 1000 else self.tokenizer.decode(inputs["input_ids"][0])
+        return {
+            "output": outputs["text"],
+            "input_len": outputs["meta_info"]["prompt_tokens"],
+            "output_len": outputs["meta_info"]["completion_tokens"],
+            "input_text": save_prompt,
+        }
+
+
+    def generate_batch(self, inputs: Optional[List[dict[str, any]]]=None, prompt: Optional[List[str]]=None, **kwargs):
+        if inputs is None:
+            assert prompt is not None
+            if self.use_chat_template:
+                chat = [format_chat(p, system_message=self.system_message) for p in prompt]
+                # should use batch encode here, should be much faster...
+                inputs = [self.tokenizer.apply_chat_template(c, tokenize=True, add_generation_prompt=True, max_length=self.max_length-self.generation_max_length, truncation=True, padding=True) for c in chat]
+                inputs = [{'input_ids': i} for i in inputs]
+            else:
+                inputs = [self.tokenizer(p, truncation=True, max_length=self.max_length - self.generation_max_length) for p in prompt]
+
+        self.sampling_params = {
+            "temperature": self.temperature if self.do_sample else 0.0,
+            "top_p": self.top_p,
+            "max_new_tokens": self.generation_max_length,
+            "stop": self.stops,
+        }
+
+        start_time = time.time()
+        outputs = self.model.generate(
+            input_ids=[i['input_ids'] for i in inputs],
+            sampling_params=self.sampling_params,
+            **kwargs
+        )
+        end_time = time.time()
+        logger.info(f"Finished batch generation for {len(inputs)} samples in {end_time - start_time} seconds")
+
+        return [
+            {
+                "output": output["text"],
+                "input_len": output["meta_info"]["prompt_tokens"],
+                "output_len": output["meta_info"]["completion_tokens"],
+                'input_text': (self.tokenizer.decode(ins['input_ids'][:500]) + " <skip> " + self.tokenizer.decode(ins['input_ids'][-500:])) if output["meta_info"]["prompt_tokens"] > 1000 else self.tokenizer.decode(ins['input_ids']),
+            } for ins, output in zip(inputs, outputs)
         ]
 
 def load_LLM(args):
@@ -1155,6 +1365,14 @@ def load_LLM(args):
         model_cls = TogetherModel
     elif args.use_vllm:
         model_cls = VLLMModel
+        kwargs['seed'] = args.seed
+    elif args.use_tgi_serving or args.use_vllm_serving:
+        model_cls = TgiVllmModel
+        kwargs['seed'] = args.seed
+        kwargs["endpoint_url"] = args.endpoint_url
+        kwargs["api_key"] = args.api_key
+    elif args.use_sglang:
+        model_cls = SGLangModel
         kwargs['seed'] = args.seed
     else:
         model_cls = HFModel
@@ -1192,6 +1410,7 @@ def load_LLM(args):
         do_sample=args.do_sample,
         stop_newline=args.stop_newline,
         use_chat_template=args.use_chat_template,
+        system_message=args.system_message,
         **kwargs,
     )
 
