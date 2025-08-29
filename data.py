@@ -218,20 +218,50 @@ def load_narrativeqa(dataset, shots=0, max_samples=None, seed=42):
 
 
 def load_multi_lexsum(dataset, shots=0, max_samples=None, seed=42):
-    all_data = load_dataset("allenai/multi_lexsum", name="v20230518", trust_remote_code=True)
-    all_data = all_data.filter(lambda x: x["summary/short"] is not None)
+    # Load from local file instead of HF Hub
+    import json
+    import os
+    from datasets import Dataset
+    
+    local_file_path = os.path.join(os.path.dirname(__file__), "data/multi_lexsum/multi_lexsum_val.jsonl")
+    if not os.path.exists(local_file_path):
+        # Fallback to HF Hub if local file doesn't exist
+        all_data = load_dataset("allenai/multi_lexsum", name="v20230518", trust_remote_code=True)
+        all_data = all_data.filter(lambda x: x["summary/short"] is not None)
+    else:
+        # Load from local JSONL file
+        data_list = []
+        with open(local_file_path, 'r') as f:
+            for line in f:
+                data = json.loads(line.strip())
+                if data.get("summary/short") is not None:
+                    data_list.append(data)
+        
+        # Create datasets dict structure to match HF format
+        validation_dataset = Dataset.from_list(data_list)
+        # For shots, we'll use a subset of the validation data as "train" data
+        train_data_list = data_list[:min(100, len(data_list))] if shots > 0 else []
+        train_dataset = Dataset.from_list(train_data_list)
+        
+        all_data = {"validation": validation_dataset, "train": train_dataset}
 
     user_template = "You are given the legal documents in a civil rights lawsuit, and you are tasked to summarize the case. Write a concise summary of one paragraph (200 to 250 words). The summary should contain a short description of the background, the parties involved, and the outcomes of the case.\n\n{demo}Legal documents:\n{context}\n\nNow please summarize the case."
     system_template = "Summary:"
     prompt_template = user_template + "\n\n" + system_template
     train_data = all_data["train"]
 
-    all_data = all_data.map(lambda x: {
-        "context": '\n\n'.join(x["sources"]),
-        "demo": "" if shots == 0 else "Example summaries:\n\n" + "\n\n".join(["Summary: {}".format(ex["summary/short"]) for ex in train_data.shuffle().select(range(shots))]) + "\n\nNow, write a summary of the following legal documents.\n",
-        "answer": x["summary/short"],
-        "question": "",
-    })
+    # Map the datasets
+    def map_example(x):
+        return {
+            "context": '\n\n'.join(x["sources"]),
+            "demo": "" if shots == 0 else "Example summaries:\n\n" + "\n\n".join(["Summary: {}".format(ex["summary/short"]) for ex in train_data.shuffle().select(range(shots))]) + "\n\nNow, write a summary of the following legal documents.\n",
+            "answer": x["summary/short"],
+            "question": "",
+        }
+    
+    all_data["validation"] = all_data["validation"].map(map_example)
+    if shots > 0:
+        all_data["train"] = all_data["train"].map(map_example)
 
     test_data = all_data["validation"]
     test_data = filter_length(test_data, 65536, "context")
@@ -367,8 +397,17 @@ def load_icl(dataset, max_test_sample=None, seed=42):
         label_field = "label"
         num_labels = 77
     elif "clinic150" in dataset.lower():
-        train_data = load_dataset("clinc_oos", "plus")["train"]
-        test_data = load_dataset("clinc_oos", "plus")["validation"]
+        # Load from local directory if available, fallback to HF Hub
+        import os
+        local_data_path = os.path.join(os.path.dirname(__file__), "data/clinc_oos")
+        if os.path.exists(local_data_path):
+            from datasets import load_from_disk
+            local_data = load_from_disk(local_data_path)
+            train_data = local_data["train"]
+            test_data = local_data["validation"]
+        else:
+            train_data = load_dataset("clinc_oos", "plus")["train"]
+            test_data = load_dataset("clinc_oos", "plus")["validation"]
         id2label = train_data.features["intent"].names
         text_field = "text"
         label_field = "intent"
