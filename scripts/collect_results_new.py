@@ -11,13 +11,17 @@ TASK_MAP = {
     "json_kv": "recall_jsonkv", 
     "kilt_hotpotqa": "rag_hotpotqa",
     "kilt_nq": "rag_nq",
-    "msmarco_rerank": "rerank"
+    "msmarco_rerank": "rerank",
+    "icl_banking77": "banking77",
+    "icl_clinic150": "clinic150",
+    "multi_lexsum": "multi_lexsum"
 }
 TASKS_BY_CONTEXT = {
     "2k": ["html_to_tsv", "pseudo_to_code", "travel_planning"],
     "5k": ["html_to_tsv", "pseudo_to_code"],
-    "16k": ["recall_jsonkv", "rag_nq", "rag_hotpotqa", "rerank", "cite"],
-    "32k": ["recall_jsonkv", "rag_nq", "rag_hotpotqa", "rerank", "cite"]
+    "8k": ["html_to_tsv", "travel_planning"],
+    "16k": ["recall_jsonkv", "rag_nq", "rag_hotpotqa", "rerank", "cite", "banking77", "clinic150", "multi_lexsum"],
+    "32k": ["recall_jsonkv", "rag_nq", "rag_hotpotqa", "rerank", "cite", "banking77", "clinic150", "multi_lexsum"]
 }
 SCORE_KEYS = {
     "html_to_tsv": ["f1"],
@@ -27,7 +31,10 @@ SCORE_KEYS = {
     "recall_jsonkv": ["substring_exact_match"],
     "rag_nq": ["substring_exact_match"],
     "rag_hotpotqa": ["substring_exact_match"],
-    "rerank": ["NDCG@10"]
+    "rerank": ["NDCG@10"],
+    "banking77": ["exact_match"],
+    "clinic150": ["exact_match"],
+    "multi_lexsum": ["gpt-4-f1"]
 }
 
 # Helper function to map file prefix to task
@@ -89,7 +96,7 @@ for technique in tqdm(os.listdir(base_dir), desc="Processing techniques"):
                 tasks = TASKS_BY_CONTEXT.get(context_length, [])
 
                 # Determine if this is LongProc or HELMET based on context length
-                is_longproc = context_length in ["2k", "5k"]
+                is_longproc = context_length in ["2k", "5k", "8k"]
                 memory_data = longproc_memory_data if is_longproc else helmet_memory_data
                 throughput_data = longproc_throughput_data if is_longproc else helmet_throughput_data
                 performance_data = longproc_performance_data if is_longproc else helmet_performance_data
@@ -103,7 +110,8 @@ for technique in tqdm(os.listdir(base_dir), desc="Processing techniques"):
                     if task not in tasks:
                         continue
 
-                    if file.endswith(".json") and not file.endswith(".json.score"):
+                    # Handle regular json files for memory/throughput 
+                    if file.endswith(".json") and not file.endswith(".json.score") and not file.endswith("-gpt4eval_o.json"):
                         with open(filepath) as f:
                             data = json.load(f)
                             if "memory_usage" in data:
@@ -111,6 +119,32 @@ for technique in tqdm(os.listdir(base_dir), desc="Processing techniques"):
                                 memory_data[row_key][task] = float(data["memory_usage"]) / 1e9
                             if "throughput" in data:
                                 throughput_data[row_key][task] = float(data["throughput"])
+                    
+                    # Handle GPT-4 evaluation files
+                    elif file.endswith("-gpt4eval_o.json"):
+                        with open(filepath) as f:
+                            score_data = json.load(f)
+                            # For GPT-4 evaluation files, extract from averaged_metrics
+                            if "averaged_metrics" in score_data:
+                                score_data = score_data['averaged_metrics']
+                            else:
+                                print(f"Warning: No averaged_metrics found in {filepath}")
+                                continue
+                        
+                            for key in SCORE_KEYS.get(task, []):
+                                value = score_data.get(key)
+                                if value is not None:
+                                    try:
+                                        perf_key = f"{task}_{key}" if len(SCORE_KEYS[task]) > 1 else task
+                                        performance_data[row_key][perf_key] = float(value)
+                                        # print(f"Successfully added performance data: {row_key} -> {perf_key} = {value}")
+                                    except Exception as e:
+                                        print(f"Error processing value: {value} for key: {key}")
+                                        print(f"Exception: {str(e)}")
+                                else:
+                                    print(f"Warning: No value found for key {key} in score data")
+                    
+                    # Handle score files
                     elif file.endswith(".json.score"):
                         with open(filepath) as f:
                             score_data = json.load(f)
