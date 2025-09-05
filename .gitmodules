@@ -1,9 +1,6 @@
 [submodule "longproc_addon/longproc"]
 	path = longproc_addon/longproc
 	url = https://github.com/princeton-pli/LongProc.git
-[submodule "duo-attention"]
-	path = duo-attention
-	url = https://github.com/joie-zhang/duo-attention.git
 [submodule "src/minference"]
 	path = src/minference
 	url = https://github.com/joie-zhang/MInference.git
