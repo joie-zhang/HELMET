@@ -478,8 +478,14 @@ if __name__ == "__main__":
                         # Try both with and without tag
                         all_paths.extend(glob.glob(os.path.join(quant_path, f"multi_lexsum_*_{args.tag}_*.json")))
                         all_paths.extend(glob.glob(os.path.join(quant_path, f"multi_lexsum_*.json")))
-                        all_paths.extend(glob.glob(os.path.join(quant_path, f"infbench_sum_*_{args.tag}_*.json")))
-                        all_paths.extend(glob.glob(os.path.join(quant_path, f"infbench_sum_*.json")))
+                        # all_paths.extend(glob.glob(os.path.join(quant_path, f"infbench_sum_*_{args.tag}_*.json")))
+                        # all_paths.extend(glob.glob(os.path.join(quant_path, f"infbench_sum_*.json")))
+                
+                # Handle techniques without quantization subdirectories (e.g., minference)
+                all_paths.extend(glob.glob(os.path.join(model_path, f"multi_lexsum_*_{args.tag}_*.json")))
+                all_paths.extend(glob.glob(os.path.join(model_path, f"multi_lexsum_*.json")))
+                # all_paths.extend(glob.glob(os.path.join(model_path, f"infbench_sum_*_{args.tag}_*.json")))
+                # all_paths.extend(glob.glob(os.path.join(model_path, f"infbench_sum_*.json")))
 
     all_paths = [item for item in all_paths if item.endswith(".json")]
     all_paths = [p for p in all_paths if not os.path.exists(p.replace(".json", "-gpt4eval_o.json"))]
