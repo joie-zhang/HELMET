@@ -787,7 +787,11 @@ def tokenize(
             new_context = tokenizer.decode(context_tokens["input_ids"][:-truncate_length])
         else:
             context_tokens = tokenizer([sample["context"]], return_offsets_mapping=True)
-            new_context = sample["context"][:context_tokens["offset_mapping"][0][-truncate_length][0]]
+            print(f"max_length: {max_length}, generation_max_length: {generation_max_length}, buffer: {buffer}")
+            print(f"truncate_length: {truncate_length}")
+            print(f"sample['context']: {sample['context']}")
+            print(f"context_tokens: {context_tokens}")
+            new_context = sample["context"]#[:context_tokens["offset_mapping"][0][-truncate_length][0]]
 
         sample["context"] = new_context
         tokenized_input = format_input(sample)

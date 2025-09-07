@@ -150,7 +150,7 @@ fi
 
 # Set chat template option
 shopt -s nocasematch
-chat_models=".*(chat|instruct|it$|nous|command|Jamba-1.5|MegaBeam).*"
+chat_models=".*(chat|instruct|it$|nous|command|Jamba-1.5|MegaBeam|Qwen3-8B|DeepSeek-R1-Distill-Llama-8B).*"
 OPTIONS=""
 if ! [[ $MNAME =~ $chat_models ]]; then
     OPTIONS="$OPTIONS --use_chat_template False"
@@ -245,6 +245,7 @@ python /scratch/gpfs/DANQIC/jz4391/HELMET/eval.py \
     --output_dir $OUTPUT_DIR \
     --tag "$TAG" \
     --model_name_or_path $MODEL_NAME \
+    --enable_thinking True \
     $QUANTIZE_PARAM \
     $EXP_TYPE_PARAM \
     $KV_CACHE_PARAMS \
