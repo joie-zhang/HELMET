@@ -850,6 +850,11 @@ class HFModel(LLM):
         if "rope_theta" in kwargs and kwargs["rope_theta"] is not None:
             logger.info(f"Override rope theta to {kwargs['rope_theta']}")
             config.rope_theta = kwargs["rope_theta"]
+            
+        if "enable_thinking" in kwargs and kwargs["enable_thinking"] is not None:
+            self.enable_thinking = kwargs["enable_thinking"]
+        else:
+            self.enable_thinking = None
 
         # quantization
         if quantize == 8:       # 8 bit quantization
@@ -1007,7 +1012,10 @@ class HFModel(LLM):
             assert prompt is not None
             if self.use_chat_template and isinstance(prompt, str):
                 chat = format_chat(prompt, include_system=False)
-                prompt = self.tokenizer.apply_chat_template(chat, tokenize=False, add_generation_prompt=True)
+                if self.enable_thinking is not None:
+                    prompt = self.tokenizer.apply_chat_template(chat, tokenize=False, add_generation_prompt=True, enable_thinking=self.enable_thinking)
+                else:
+                    prompt = self.tokenizer.apply_chat_template(chat, tokenize=False, add_generation_prompt=True)
             inputs = self.tokenizer([prompt], return_tensors="pt", max_length=self.max_length-self.generation_max_length, truncation=True, padding=True)
 
         inputs = inputs.to(self.model.device)
@@ -1029,13 +1037,6 @@ class HFModel(LLM):
                 logger.warning("past key values is None, not able to prefill with KVs, disabling...")
             else:
                 inputs = BatchEncoding({"input_ids": inputs.input_ids, "attention_mask": inputs.attention_mask, "past_key_values": past_key_values})
-
-
-        print("********************THE CURRENT BUG IS HERE********************")
-        print("Inputs keys →", inputs.keys())
-        # print("Inputs values →", inputs.values())
-        print("********************THE CURRENT BUG IS HERE********************")
-        assert "cache_position" not in inputs, "cache_position sneaked in"
         
         outputs = self.model.generate(
             **inputs,
@@ -1208,6 +1209,8 @@ def load_LLM(args):
             kwargs["rope_theta"] = args.rope_theta
         if args.quantize is not None:
             kwargs["quantize"] = args.quantize
+        if args.enable_thinking is not None:
+            kwargs["enable_thinking"] = args.enable_thinking
         # DuoAttention
         if args.duoattn is not None:
             kwargs["duoattn"] = args.duoattn

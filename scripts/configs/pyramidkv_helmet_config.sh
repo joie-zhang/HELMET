@@ -1,9 +1,10 @@
 # pyramidkv_helmet_config.sh
 # declare -a BASE_CONFIGS=("cite" "rerank" "recall_jsonkv" "rag_nq" "rag_hotpotqa" "niah")
-declare -a BASE_CONFIGS=("rag_nq")
+declare -a BASE_CONFIGS=("niah")
 declare -a CONTEXT_LENGTHS=("32k")
 # declare -a MODELS=("Llama-3.1-8B-Instruct")
-declare -a MODELS=("Qwen2.5-7B-Instruct")
+# declare -a MODELS=("Qwen2.5-7B-Instruct")
+declare -a MODELS=("Qwen3-8B")
 declare -a QUANTIZE=("")  # non-baseline experiments should not support quantize
 EXP_TYPE="pyramidkv"
 BENCHMARK="helmet"
@@ -35,7 +36,7 @@ KERNEL_SIZE=5                 # Kernel size for attention pooling
 POOLING="avgpool"             # Pooling method for attention (maxpool or avgpool)
 
 # SLURM Configuration
-JOB_TIME="3:00:00"
+JOB_TIME="1:00:00"
 JOB_NAME="${EXP_TYPE}_${BENCHMARK}_${CONTEXT_LENGTHS[-1]}_eval"
 
 # Export variables so they're available to the job script

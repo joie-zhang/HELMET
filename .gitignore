@@ -4,6 +4,7 @@ output/
 env/
 *_env/
 joblog/
+joie_joblog/
 spoctmp
 flash_attn*
 
