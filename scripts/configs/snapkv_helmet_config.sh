@@ -1,26 +1,29 @@
-# # snapkv_helmet_config.sh
+# snapkv_helmet_config.sh
 # declare -a BASE_CONFIGS=("cite" "rerank" "recall_jsonkv" "rag_nq" "rag_hotpotqa" "niah")
-# declare -a CONTEXT_LENGTHS=("16k" "32k")
+declare -a BASE_CONFIGS=("cite")
+declare -a CONTEXT_LENGTHS=("16k" "32k")
+# declare -a MODELS=("Llama-3.1-8B-Instruct")
+# declare -a MODELS=("Qwen2.5-7B-Instruct")
+declare -a MODELS=("DeepSeek-R1-Distill-Llama-8B")
+# declare -a MODELS=("DeepSeek-R1-Distill-Qwen-7B")
+declare -a QUANTIZE=("")  # non-baseline experiments should not support quantize
+EXP_TYPE="snapkv"
+BENCHMARK="helmet"
+SEED=42
+
+# # snapkv_longproc_config.sh
+# declare -a BASE_CONFIGS=("html_to_tsv" "pseudo_to_code")
+# declare -a CONTEXT_LENGTHS=("0.5k")
+# # declare -a BASE_CONFIGS=("html_to_tsv" "pseudo_to_code" "travel_planning")
+# # declare -a CONTEXT_LENGTHS=("2k")
+# # declare -a BASE_CONFIGS=("html_to_tsv" "travel_planning")
+# # declare -a CONTEXT_LENGTHS=("8k")
 # # declare -a MODELS=("Llama-3.1-8B-Instruct")
 # declare -a MODELS=("Qwen2.5-7B-Instruct")
 # declare -a QUANTIZE=("")  # non-baseline experiments should not support quantize
 # EXP_TYPE="snapkv"
-# BENCHMARK="helmet"
+# BENCHMARK="longproc"
 # SEED=42
-
-# snapkv_longproc_config.sh
-declare -a BASE_CONFIGS=("html_to_tsv" "pseudo_to_code")
-declare -a CONTEXT_LENGTHS=("0.5k")
-# declare -a BASE_CONFIGS=("html_to_tsv" "pseudo_to_code" "travel_planning")
-# declare -a CONTEXT_LENGTHS=("2k")
-# declare -a BASE_CONFIGS=("html_to_tsv" "travel_planning")
-# declare -a CONTEXT_LENGTHS=("8k")
-# declare -a MODELS=("Llama-3.1-8B-Instruct")
-declare -a MODELS=("Qwen2.5-7B-Instruct")
-declare -a QUANTIZE=("")  # non-baseline experiments should not support quantize
-EXP_TYPE="snapkv"
-BENCHMARK="longproc"
-SEED=42
 
 # KV Cache Configuration Parameters
 # These will be used for snapkv method

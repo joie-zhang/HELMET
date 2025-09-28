@@ -1,11 +1,11 @@
 # pyramidkv_helmet_config.sh
 # declare -a BASE_CONFIGS=("cite" "rerank" "recall_jsonkv" "rag_nq" "rag_hotpotqa" "niah")
-declare -a BASE_CONFIGS=("niah")
-declare -a CONTEXT_LENGTHS=("32k")
+declare -a BASE_CONFIGS=("cite")
+declare -a CONTEXT_LENGTHS=("16k" "32k")
 # declare -a MODELS=("Llama-3.1-8B-Instruct")
 # declare -a MODELS=("Qwen2.5-7B-Instruct")
-# declare -a MODELS=("Qwen3-8B")
 declare -a MODELS=("DeepSeek-R1-Distill-Llama-8B")
+# declare -a MODELS=("DeepSeek-R1-Distill-Qwen-7B")
 declare -a QUANTIZE=("")  # non-baseline experiments should not support quantize
 EXP_TYPE="pyramidkv"
 BENCHMARK="helmet"
@@ -27,6 +27,14 @@ SEED=42
 
 # KV Cache Configuration Parameters
 # These will be used for pyramidkv
+
+# # cache size: 64 vs 2048
+# KV_TYPE="pyramidkv"           # KV type
+# WINDOW_SIZE=32                # Window size for KV cache methods
+# # MAX_CAPACITY_PROMPT=64      # Maximum capacity for prompt in KV cache
+# MAX_CAPACITY_PROMPT=2048      # Maximum capacity for prompt in KV cache
+# KERNEL_SIZE=5                 # Kernel size for attention pooling
+# POOLING="avgpool"             # Pooling method for attention (maxpool or avgpool)
 
 # cache size: 64 vs 2048
 KV_TYPE="pyramidkv"           # KV type
