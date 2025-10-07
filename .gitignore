@@ -5,6 +5,7 @@ env/
 *_env/
 joblog/
 joie_joblog/
+joblog_erroneous_*
 spoctmp
 flash_attn*
 
