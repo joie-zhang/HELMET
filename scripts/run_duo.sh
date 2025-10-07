@@ -30,7 +30,7 @@ submit_job() {
 #SBATCH -n 1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=50G
-#SBATCH --time=8:00:00                                     
+#SBATCH --time=12:00:00                                     
 
 module purge
 source /scratch/gpfs/ab4197/anaconda3/etc/profile.d/conda.sh
@@ -58,31 +58,37 @@ EOT
 export OUTLINES_CACHE_DIR=/tmp/outlines
 
 tasks=(
-    # "longproc_addon/configs/travel_planning_2k.yaml"
-    # "longproc_addon/configs/html_to_tsv_2k.yaml"
-    # "longproc_addon/configs/pseudo_to_code_2k.yaml"
-    # "configs/rag_nq_16k.yaml"
-    # "configs/rag_hotpotqa_32k.yaml"
-    # "configs/rerank_32k.yaml"
-    # "configs/recall_jsonkv_32k.yaml"
-    # "configs/cite_32k.yaml"
-    # "configs/niah_32k.yaml"
     # "longproc_addon/configs/pseudo_to_code_0.5k.yaml"
     # "longproc_addon/configs/html_to_tsv_0.5k.yaml"
+
+    "longproc_addon/configs/pseudo_to_code_2k.yaml"    
+    "longproc_addon/configs/html_to_tsv_2k.yaml"
+    "longproc_addon/configs/travel_planning_2k.yaml"
+
+    # "longproc_addon/configs/html_to_tsv_8k.yaml"
+    # "longproc_addon/configs/travel_planning_8k.yaml"
+
     # "configs/rag_hotpotqa_16k.yaml"
+    # "configs/rag_nq_16k.yaml"
     # "configs/rerank_16k.yaml"
     # "configs/recall_jsonkv_16k.yaml"
     # "configs/cite_16k.yaml"
     # "configs/niah_16k.yaml"
 
-    "configs/rag_nq_32k.yaml"
-    "longproc_addon/configs/html_to_tsv_8k.yaml"
-    "longproc_addon/configs/travel_planning_8k.yaml"
+    # "configs/rag_hotpotqa_32k.yaml"
+    # "configs/rag_nq_32k.yaml"
+    # "configs/rerank_32k.yaml"
+    # "configs/recall_jsonkv_32k.yaml"
+    # "configs/cite_32k.yaml"
+    # "configs/niah_32k.yaml"
+
+    # "configs/icl_16k.yaml"
 )
 
 models=(
-    /scratch/gpfs/DANQIC/models/Llama-3.1-8B-Instruct
+    # /scratch/gpfs/DANQIC/models/Llama-3.1-8B-Instruct
     # /scratch/gpfs/DANQIC/models/Qwen2.5-7B-Instruct
+    /scratch/gpfs/DANQIC/models/DeepSeek-R1-Distill-Llama-8B
 )
 
 exp_types=(

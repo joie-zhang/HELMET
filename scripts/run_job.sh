@@ -76,6 +76,10 @@ num_contexts=${#CONTEXT_LENGTHS[@]}
 num_models=${#MODELS[@]}
 if [ "${EXP_TYPE}" = "baseline" ]; then
     num_quant=${#QUANTIZE[@]}
+    # Safeguard: if QUANTIZE array is empty or contains only empty strings, set to 1
+    if [ "$num_quant" -eq 0 ] || [ "${QUANTIZE[0]}" = "" ]; then
+        num_quant=1
+    fi
 else
     num_quant=1
 fi
@@ -100,7 +104,13 @@ fi
 MNAME="${MODELS[$SLURM_ARRAY_TASK_ID % ${#MODELS[@]}]}"
 MNAME="${MNAME## }"    # Remove leading spaces
 MNAME="${MNAME%% }"    # Remove trailing spaces
-MODEL_NAME="/scratch/gpfs/DANQIC/models/$MNAME"
+
+# Handle special path for Yarn-Qwen3-8B model
+if [ "$MNAME" = "Yarn-Qwen3-8B" ]; then
+    MODEL_NAME="/scratch/gpfs/DANQIC/jz4391/Yarn-Qwen3-8B"
+else
+    MODEL_NAME="/scratch/gpfs/DANQIC/models/$MNAME"
+fi
 
 # Create flattened array of all configs
 declare -a ALL_CONFIGS=()
@@ -150,7 +160,7 @@ fi
 
 # Set chat template option
 shopt -s nocasematch
-chat_models=".*(chat|instruct|it$|nous|command|Jamba-1.5|MegaBeam|Qwen3-8B|DeepSeek-R1-Distill-Llama-8B).*"
+chat_models=".*(chat|instruct|it$|nous|command|Jamba-1.5|MegaBeam|Qwen3-8B|DeepSeek-R1-Distill-Llama-8B|DeepSeek-R1-Distill-Qwen-7B).*"
 OPTIONS=""
 if ! [[ $MNAME =~ $chat_models ]]; then
     OPTIONS="$OPTIONS --use_chat_template False"
@@ -233,9 +243,17 @@ echo "Debug: Full config path = configs/$CONFIG"
 echo "Debug: KV cache parameters = $KV_CACHE_PARAMS"
 
 if [ "$BENCHMARK" == "longproc" ]; then
-    CONFIG_PATH="/scratch/gpfs/DANQIC/jz4391/HELMET/longproc_addon/configs/$CONFIG"
+    if [ "$USE_REASONING_CONFIG" == "true" ]; then
+        CONFIG_PATH="/scratch/gpfs/DANQIC/jz4391/HELMET/longproc_addon/configs_reasoning/$CONFIG"
+    else
+        CONFIG_PATH="/scratch/gpfs/DANQIC/jz4391/HELMET/longproc_addon/configs/$CONFIG"
+    fi
 else
-    CONFIG_PATH="/scratch/gpfs/DANQIC/jz4391/HELMET/configs/$CONFIG"
+    if [ "$USE_REASONING_CONFIG" == "true" ]; then
+        CONFIG_PATH="/scratch/gpfs/DANQIC/jz4391/HELMET/configs_reasoning/$CONFIG"
+    else
+        CONFIG_PATH="/scratch/gpfs/DANQIC/jz4391/HELMET/configs/$CONFIG"
+    fi
 fi
 
 # Run evaluation for the single configuration
