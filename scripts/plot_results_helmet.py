@@ -45,7 +45,8 @@ sns.set(style='whitegrid')
 # 2) Define the 8 performance tasks (including the three cite metrics) and the two contexts
 perf_tasks = [
     'recall_jsonkv', 'rag_nq', 'rag_hotpotqa', 'rerank',
-    'cite_str_em', 'cite_citation_rec', 'cite_citation_prec', 'niah'
+    'cite_str_em', 'cite_citation_rec', 'cite_citation_prec', 'niah', 
+    'icl_clinic', 'icl_banking'
 ]
 contexts = ['16k', '32k']
 
@@ -56,6 +57,7 @@ model_palette = {
     'DeepSeek-R1-Distill-Llama-8B': 'tab:red',
     'DeepSeek-R1-Distill-Qwen-7B': 'tab:green',
     'Qwen3-8B': 'tab:purple',
+    'Yarn-Qwen3-8B': 'tab:brown',
 }
 marker_dict = {
     'baseline':     'o',

@@ -52,13 +52,14 @@ def format_cache_size(cache_size: str) -> str:
         n_local = parts[2]
         n_init = parts[5]
         return f"n_local={n_local}, n_init={n_init}"
-    elif cache_size.startswith("w32_c") and "_k" in cache_size:
-        # For SnapKV and PyramidKV with format w32_c{cache}_k{k}_{pool}
+    elif cache_size.startswith("w") and "_c" in cache_size and "_k" in cache_size:
+        # For SnapKV and PyramidKV with format w{window}_c{cache}_k{k}_{pool}
         parts = cache_size.split('_')
+        window_val = parts[0][1:]  # Remove 'w' prefix
         cache_val = parts[1][1:]  # Remove 'c' prefix
         k_val = parts[2][1:]      # Remove 'k' prefix
         pool_type = parts[3]      # maxpool or avgpool
-        return f"c={cache_val}, k={k_val}, {pool_type}"
+        return f"w={window_val}, c={cache_val}, k={k_val}, {pool_type}"
     else:
         # For other techniques, format as "cache=X"
         return f"cache={cache_size.replace('cache_', '')}"
@@ -66,7 +67,12 @@ def format_cache_size(cache_size: str) -> str:
 # 2) Define color palette for models and marker shapes for techniques
 model_palette = {
     'Llama-3.1-8B-Instruct': 'tab:orange',
-    'Qwen2.5-7B-Instruct':    'tab:blue'
+    'Qwen2.5-7B-Instruct':    'tab:blue',
+    'DeepSeek-R1-Distill-Llama-8B': 'tab:red',
+    'DeepSeek-R1-Distill-Qwen-7B': 'tab:green',
+    'Qwen3-8B': 'tab:purple',
+    'Yarn-Qwen3-8B': 'tab:brown',
+    
 }
 marker_dict = {
     'baseline':     'o',
@@ -135,14 +141,15 @@ for i, task in tqdm(enumerate(perf_tasks + ['average']), desc='Processing tasks'
                     )
                     group = group.sort_values('sort_key')
                     group = group.drop('sort_key', axis=1)
-                elif technique in ["snapkv", "pyramidkv"] and group['cache_size'].iloc[0].startswith('w32_c'):
-                    # For SnapKV/PyramidKV with format w32_c{cache}_k{k}_{pool}
+                elif technique in ["snapkv", "pyramidkv"] and group['cache_size'].iloc[0].startswith('w'):
+                    # For SnapKV/PyramidKV with format w{window}_c{cache}_k{k}_{pool}
                     # Sort by cache size first, then by k value
                     def extract_cache_and_k(cache_size):
                         parts = cache_size.split('_')
+                        window_val = int(parts[0][1:])  # Remove 'w' prefix and convert to int
                         cache_val = int(parts[1][1:])  # Remove 'c' prefix and convert to int
                         k_val = int(parts[2][1:])      # Remove 'k' prefix and convert to int
-                        return (cache_val, k_val)
+                        return (window_val, cache_val, k_val)
                     
                     group['sort_key'] = group['cache_size'].apply(extract_cache_and_k)
                     group = group.sort_values('sort_key')
