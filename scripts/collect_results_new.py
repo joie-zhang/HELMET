@@ -12,14 +12,16 @@ TASK_MAP = {
     "kilt_hotpotqa": "rag_hotpotqa",
     "kilt_nq": "rag_nq",
     "msmarco_rerank": "rerank",
-    "ruler_niah_s_2": "niah"
+    "ruler_niah_s_2": "niah",
+    "icl_banking77": "icl_banking",
+    "icl_clinic150": "icl_clinic",
 }
 TASKS_BY_CONTEXT = {
     "2k": ["html_to_tsv", "pseudo_to_code", "travel_planning"],
     "5k": ["html_to_tsv", "pseudo_to_code"],
     "8k": ["html_to_tsv", "travel_planning"],
-    "16k": ["recall_jsonkv", "rag_nq", "rag_hotpotqa", "rerank", "cite", "niah"],
-    "32k": ["recall_jsonkv", "rag_nq", "rag_hotpotqa", "rerank", "cite", "niah"]
+    "16k": ["recall_jsonkv", "rag_nq", "rag_hotpotqa", "rerank", "cite", "niah", "icl_banking", "icl_clinic"],
+    "32k": ["recall_jsonkv", "rag_nq", "rag_hotpotqa", "rerank", "cite", "niah", "icl_banking", "icl_clinic"]
 }
 SCORE_KEYS = {
     "html_to_tsv": ["f1"],
@@ -31,6 +33,8 @@ SCORE_KEYS = {
     "rag_hotpotqa": ["substring_exact_match"],
     "rerank": ["NDCG@10"],
     "niah": ["ruler_recall"],
+    "icl_banking": ["exact_match"],
+    "icl_clinic": ["exact_match"],
 }
 
 # Helper function to map file prefix to task
@@ -43,14 +47,25 @@ def get_task_from_filename(filename: str) -> str:
             return task
     return None
 
-# Initialize data collectors for both LongProc and HELMET
-longproc_memory_data = defaultdict(lambda: defaultdict(float))
-longproc_throughput_data = defaultdict(lambda: defaultdict(float))
-longproc_performance_data = defaultdict(lambda: defaultdict(float))
+# Helper function to extract Slurm job ID from filename
+def extract_slurm_id(filename: str) -> int:
+    """Extract Slurm job ID from filename. Returns 0 if not found."""
+    parts = filename.split('_')
+    for i, part in enumerate(parts):
+        # Look for numeric parts that could be Slurm IDs (typically 6-7 digits)
+        if part.isdigit() and len(part) >= 6:
+            return int(part)
+    return 0
 
-helmet_memory_data = defaultdict(lambda: defaultdict(float))
-helmet_throughput_data = defaultdict(lambda: defaultdict(float))
-helmet_performance_data = defaultdict(lambda: defaultdict(float))
+# Initialize data collectors for both LongProc and HELMET
+# Now storing tuples of (value, slurm_id) to track which results are most recent
+longproc_memory_data = defaultdict(lambda: defaultdict(lambda: (0.0, 0)))
+longproc_throughput_data = defaultdict(lambda: defaultdict(lambda: (0.0, 0)))
+longproc_performance_data = defaultdict(lambda: defaultdict(lambda: (0.0, 0)))
+
+helmet_memory_data = defaultdict(lambda: defaultdict(lambda: (0.0, 0)))
+helmet_throughput_data = defaultdict(lambda: defaultdict(lambda: (0.0, 0)))
+helmet_performance_data = defaultdict(lambda: defaultdict(lambda: (0.0, 0)))
 
 # Base directory (adjust if needed)
 base_dir = "/scratch/gpfs/DANQIC/jz4391/HELMET/output"
@@ -63,6 +78,11 @@ def parse_cache_params(cache_dir: str, technique: str) -> str:
             parts = cache_dir.split('_')
             n_local = parts[0].replace('local', '')  # Get 3968 from local3968
             n_init = parts[1].replace('init', '')    # Get 128 from init128
+
+            # Replace 4096 with 4092 for streamingllm
+            if n_local == "4096":
+                n_local = "4092"
+
             return f"n_local_{n_local}_n_init_{n_init}"
         except (ValueError, IndexError) as e:
             print(f"Warning: Could not parse streamingllm cache directory name: {cache_dir}\n")
@@ -175,16 +195,27 @@ for technique in tqdm(os.listdir(base_dir), desc="Processing techniques"):
                     if task not in tasks:
                         continue
 
+                    # Extract Slurm job ID from filename
+                    slurm_id = extract_slurm_id(file)
+
                     if file.endswith(".json") and not file.endswith(".json.score"):
                         with open(filepath) as f:
                             data = json.load(f)
                             if "memory_usage" in data:
                                 # Convert memory to GB by dividing by 10^9
-                                memory_data[row_key][task] = float(data["memory_usage"]) / 1e9
+                                memory_value = float(data["memory_usage"]) / 1e9
+                                current_value, current_slurm_id = memory_data[row_key][task]
+                                # Only update if this job ID is newer (higher)
+                                if slurm_id >= current_slurm_id:
+                                    memory_data[row_key][task] = (memory_value, slurm_id)
                             if "throughput" in data and "averaged_metrics" in data and "output_len" in data["averaged_metrics"]:
                                 samples_per_second = float(data["throughput"])
                                 avg_tokens_per_sample = float(data["averaged_metrics"]["output_len"])
-                                throughput_data[row_key][task] = samples_per_second * avg_tokens_per_sample
+                                throughput_value = samples_per_second * avg_tokens_per_sample
+                                current_value, current_slurm_id = throughput_data[row_key][task]
+                                # Only update if this job ID is newer (higher)
+                                if slurm_id >= current_slurm_id:
+                                    throughput_data[row_key][task] = (throughput_value, slurm_id)
                     elif file.endswith(".json.score"):
                         with open(filepath) as f:
                             score_data = json.load(f)
@@ -192,17 +223,21 @@ for technique in tqdm(os.listdir(base_dir), desc="Processing techniques"):
                             # print(f"Processing score file: {filepath}")
                             # print(f"Score data: {score_data}")
                             # print(f"Task: {task}, Score keys: {SCORE_KEYS.get(task, [])}")
-                            
+
                             # Add debug prints to trace the data flow
                             # print(f"Current row_key: {row_key}")
                             # print(f"Current performance_data: {dict(performance_data)}")
-                            
+
                             for key in SCORE_KEYS.get(task, []):
                                 value = score_data.get(key)
                                 if value is not None:
                                     try:
                                         perf_key = f"{task}_{key}" if len(SCORE_KEYS[task]) > 1 else task
-                                        performance_data[row_key][perf_key] = float(value)
+                                        perf_value = float(value)
+                                        current_value, current_slurm_id = performance_data[row_key][perf_key]
+                                        # Only update if this job ID is newer (higher)
+                                        if slurm_id >= current_slurm_id:
+                                            performance_data[row_key][perf_key] = (perf_value, slurm_id)
                                         # print(f"Successfully added performance data: {row_key} -> {perf_key} = {value}")
                                     except Exception as e:
                                         print(f"Error processing value: {value} for key: {key}")
@@ -211,7 +246,8 @@ for technique in tqdm(os.listdir(base_dir), desc="Processing techniques"):
                                     print(f"Warning: No value found for key {key} in score data")
 
 # Create DataFrames
-def create_dataframe(data_dict: Dict[Tuple[str, str, str, str], Dict[str, float]]) -> pd.DataFrame:
+def create_dataframe(data_dict: Dict[Tuple[str, str, str, str], Dict[str, Tuple[float, int]]]) -> pd.DataFrame:
+    """Convert data dictionary to DataFrame, extracting values from (value, slurm_id) tuples."""
     records = []
     for (technique, context_length, model, cache_size), task_data in data_dict.items():
         record = {
@@ -220,7 +256,9 @@ def create_dataframe(data_dict: Dict[Tuple[str, str, str, str], Dict[str, float]
             "model": model,
             "cache_size": cache_size
         }
-        record.update(task_data)
+        # Extract just the value from each (value, slurm_id) tuple
+        for task, (value, slurm_id) in task_data.items():
+            record[task] = value
         records.append(record)
     return pd.DataFrame(records)
 
