@@ -3,7 +3,7 @@
 # SLURM submission script for PyramidKV hyperparameter sweep
 # This script submits jobs for all generated PyramidKV configs
 
-CONFIG_DIR="scripts/configs/pyramidkv_sweep"
+CONFIG_DIR="scripts/configs/r1-distill-llama-push-left-frontier-sweep-smaller-caches"
 
 # Check if config directory exists
 if [ ! -d "$CONFIG_DIR" ]; then
