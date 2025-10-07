@@ -10,7 +10,7 @@
 
 
 # source /scratch/gpfs/ab4197/anaconda3/etc/profile.d/conda.sh
-conda activate duo
+# conda activate duo
 
 
 if [ -z "$CUDA_VISIBLE_DEVICES" ]; then
@@ -27,7 +27,7 @@ export WANDB_DIR="wandb"
 export WANDB_MODE="offline"
 export OMP_NUM_THREADS=$num_gpus
 
-model_name=${MODEL:-~/pli/models/meta-llama/Llama-3.1-8B-Instruct}
+model_name=${MODEL:-/scratch/gpfs/DANQIC/models/DeepSeek-R1-Distill-Llama-8B}
 ctx_len_min=${CTX_LEN_MIN:-1024}
 ctx_len_max=${CTX_LEN_MAX:-131072}
 reg_weight=${REG_WEIGHT:-0.05}

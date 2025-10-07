@@ -8,4 +8,4 @@
 
 # bash scripts/train.sh Mistral-7B-Instruct-v0.3 1000 32000 0.05 0.02 10
 
-bash scripts/train.sh Mistral-7B-Instruct-v0.3 1000 131072 0.05 0.02 10
+bash scripts/train.sh DeepSeek-R1-Distill-Llama-8B 1000 131072 0.05 0.02 10
