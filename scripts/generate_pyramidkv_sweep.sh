@@ -1,69 +1,79 @@
 #!/bin/bash
 
-# Script to generate PyramidKV hyperparameter sweep configs
+# Script to generate KV cache hyperparameter sweep configs
 # This script creates individual config files for each hyperparameter combination
 
 # Fixed parameters
-BASE_CONFIG="cite"
-CONTEXT_LENGTH="16k"
 MODEL="DeepSeek-R1-Distill-Llama-8B"
-EXP_TYPE="pyramidkv"
-BENCHMARK="helmet"
 SEED=42
 
-# Fixed KV parameters
-KV_TYPE="pyramidkv"
-KERNEL_SIZE=5
-POOLING="avgpool"
+# Benchmarks with their configurations
+declare -A BENCHMARK_CONFIGS=(
+    ["helmet"]="icl 16k"
+    ["longproc"]="travel_planning 2k"
+)
 
-# Hyperparameter ranges to sweep (powers of 2)
-WINDOW_SIZES=(32 64 128 256 512 1024 2048)
-MAX_CAPACITY_PROMPTS=(64 128 256 512 1024 2048 4096 8192)
+# KV cache methods with their configurations
+declare -A KV_METHODS=(
+    ["pyramidkv"]="avgpool"
+    ["snapkv"]="maxpool"
+)
+
+KERNEL_SIZE=7
+
+# Specific window size - max capacity combinations to test
+declare -A WINDOW_CAPACITY_PAIRS=(
+    ["64"]="512 1024 2048"
+    ["128"]="512"
+    ["256"]="512"
+)
 
 # Output directory for generated configs
-CONFIG_DIR="scripts/configs/pyramidkv_sweep"
+CONFIG_DIR="scripts/configs/r1-distill-llama-push-left-frontier-sweep-smaller-caches"
 mkdir -p "$CONFIG_DIR"
 
 # SLURM configuration
-JOB_TIME="1:00:00"
+JOB_TIME="4:00:00"
 
-echo "Generating PyramidKV hyperparameter sweep configs..."
-echo "Window sizes: ${WINDOW_SIZES[@]}"
-echo "Max capacity prompts: ${MAX_CAPACITY_PROMPTS[@]}"
-echo "Constraint: max_capacity_prompt > window_size"
+echo "Generating KV cache hyperparameter sweep configs..."
+echo "Benchmarks: ${!BENCHMARK_CONFIGS[@]}"
+echo "KV Methods: ${!KV_METHODS[@]}"
+echo "Window-Capacity pairs:"
+for window in "${!WINDOW_CAPACITY_PAIRS[@]}"; do
+    echo "  Window ${window}: Capacities [${WINDOW_CAPACITY_PAIRS[$window]}]"
+done
 echo ""
 
 config_count=0
-skipped_count=0
 
-for window_size in "${WINDOW_SIZES[@]}"; do
-    for max_capacity in "${MAX_CAPACITY_PROMPTS[@]}"; do
-        # Skip invalid combinations where max_capacity_prompt <= window_size
-        if [ "$max_capacity" -le "$window_size" ]; then
-            echo "Skipping invalid combination: window_size=$window_size, max_capacity=$max_capacity (max_capacity must be > window_size)"
-            ((skipped_count++))
-            continue
-        fi
+for benchmark in "${!BENCHMARK_CONFIGS[@]}"; do
+    # Parse benchmark config
+    read -r base_config context_length <<< "${BENCHMARK_CONFIGS[$benchmark]}"
 
-        config_file="${CONFIG_DIR}/pyramidkv_w${window_size}_c${max_capacity}_config.sh"
+    for kv_method in "${!KV_METHODS[@]}"; do
+        pooling="${KV_METHODS[$kv_method]}"
 
-        cat > "$config_file" << EOF
-# PyramidKV hyperparameter sweep config
-# Window Size: ${window_size}, Max Capacity: ${max_capacity}
-declare -a BASE_CONFIGS=("${BASE_CONFIG}")
-declare -a CONTEXT_LENGTHS=("${CONTEXT_LENGTH}")
+        for window_size in "${!WINDOW_CAPACITY_PAIRS[@]}"; do
+            for max_capacity in ${WINDOW_CAPACITY_PAIRS[$window_size]}; do
+                config_file="${CONFIG_DIR}/${kv_method}_${benchmark}_w${window_size}_c${max_capacity}_config.sh"
+
+                cat > "$config_file" << EOF
+# ${kv_method} hyperparameter sweep config
+# Benchmark: ${benchmark}, Window Size: ${window_size}, Max Capacity: ${max_capacity}
+declare -a BASE_CONFIGS=("${base_config}")
+declare -a CONTEXT_LENGTHS=("${context_length}")
 declare -a MODELS=("${MODEL}")
 declare -a QUANTIZE=("")  # non-baseline experiments should not support quantize
-EXP_TYPE="${EXP_TYPE}"
-BENCHMARK="${BENCHMARK}"
+EXP_TYPE="${kv_method}"
+BENCHMARK="${benchmark}"
 SEED=${SEED}
 
 # KV Cache Configuration Parameters
-KV_TYPE="${KV_TYPE}"           # KV type
+KV_TYPE="${kv_method}"           # KV type
 WINDOW_SIZE=${window_size}                # Window size for KV cache methods
 MAX_CAPACITY_PROMPT=${max_capacity}      # Maximum capacity for prompt in KV cache
 KERNEL_SIZE=${KERNEL_SIZE}                 # Kernel size for attention pooling
-POOLING="${POOLING}"             # Pooling method for attention (maxpool or avgpool)
+POOLING="${pooling}"             # Pooling method for attention (maxpool or avgpool)
 
 # SLURM Configuration
 JOB_TIME="${JOB_TIME}"
@@ -84,25 +94,13 @@ export KERNEL_SIZE
 export POOLING
 EOF
 
-        echo "Created: $config_file (w=${window_size}, c=${max_capacity})"
-        ((config_count++))
+                echo "Created: $config_file (${kv_method}, ${benchmark}, w=${window_size}, c=${max_capacity})"
+                ((config_count++))
+            done
+        done
     done
 done
 
 echo ""
-echo "Generated $config_count valid config files in $CONFIG_DIR"
-echo "Skipped $skipped_count invalid combinations"
-echo "Each config tests a valid Window Size × Max Capacity combination for PyramidKV"
-echo ""
-echo "Valid combinations generated:"
-for window_size in "${WINDOW_SIZES[@]}"; do
-    valid_capacities=()
-    for max_capacity in "${MAX_CAPACITY_PROMPTS[@]}"; do
-        if [ "$max_capacity" -gt "$window_size" ]; then
-            valid_capacities+=("$max_capacity")
-        fi
-    done
-    if [ ${#valid_capacities[@]} -gt 0 ]; then
-        echo "  Window ${window_size}: Capacities [${valid_capacities[@]}]"
-    fi
-done
+echo "Generated $config_count config files in $CONFIG_DIR"
+echo "Total configurations: 2 benchmarks × 2 KV methods × 5 window-capacity pairs = 20 configs"
