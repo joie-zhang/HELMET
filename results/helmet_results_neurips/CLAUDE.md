@@ -1,0 +1,1 @@
+- Always source ~/.venv/bin/activate before running python related stuff, and use uv pip instead of pip
