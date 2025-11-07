@@ -8,25 +8,27 @@ from tqdm import tqdm
 # Constants
 TASK_MAP = {
     "alce_asqa": "cite",
-    "json_kv": "recall_jsonkv", 
+    "json_kv": "recall_jsonkv",
     "kilt_hotpotqa": "rag_hotpotqa",
     "kilt_nq": "rag_nq",
     "msmarco_rerank": "rerank",
     "ruler_niah_s_2": "niah",
     "icl_banking77": "icl_banking",
     "icl_clinic150": "icl_clinic",
+    "multi_lexsum": "summ_multilex",
 }
 TASKS_BY_CONTEXT = {
+    "0.5k": ["html_to_tsv", "pseudo_to_code"],  # 0.5k maps to 5k in output directories
     "2k": ["html_to_tsv", "pseudo_to_code", "travel_planning"],
     "5k": ["html_to_tsv", "pseudo_to_code"],
     "8k": ["html_to_tsv", "travel_planning"],
-    "16k": ["recall_jsonkv", "rag_nq", "rag_hotpotqa", "rerank", "cite", "niah", "icl_banking", "icl_clinic"],
-    "32k": ["recall_jsonkv", "rag_nq", "rag_hotpotqa", "rerank", "cite", "niah", "icl_banking", "icl_clinic"]
+    "16k": ["recall_jsonkv", "rag_nq", "rag_hotpotqa", "rerank", "cite", "niah", "icl_banking", "icl_clinic", "summ_multilex"],
+    "32k": ["recall_jsonkv", "rag_nq", "rag_hotpotqa", "rerank", "cite", "niah", "icl_banking", "icl_clinic", "summ_multilex"]
 }
 SCORE_KEYS = {
     "html_to_tsv": ["f1"],
     "pseudo_to_code": ["accuracy"],
-    "travel_planning": ["accuracy"], 
+    "travel_planning": ["accuracy"],
     "cite": ["str_em", "citation_rec", "citation_prec"],
     "recall_jsonkv": ["substring_exact_match"],
     "rag_nq": ["substring_exact_match"],
@@ -35,7 +37,15 @@ SCORE_KEYS = {
     "niah": ["ruler_recall"],
     "icl_banking": ["exact_match"],
     "icl_clinic": ["exact_match"],
+    "summ_multilex": ["gpt-4-f1"],
 }
+
+# Helper function to normalize context length (0.5k should be treated as 5k)
+def normalize_context_length(context_length: str) -> str:
+    """Normalize context length to handle different naming conventions."""
+    if context_length == "0.5k":
+        return "5k"
+    return context_length
 
 # Helper function to map file prefix to task
 def get_task_from_filename(filename: str) -> str:
@@ -117,10 +127,13 @@ for technique in tqdm(os.listdir(base_dir), desc="Processing techniques"):
     if technique == "quest":
         continue
         
-    for context_length in tqdm(os.listdir(technique_path), desc=f"Processing {technique} contexts", leave=False):
-        context_path = os.path.join(technique_path, context_length)
+    for context_length_raw in tqdm(os.listdir(technique_path), desc=f"Processing {technique} contexts", leave=False):
+        context_path = os.path.join(technique_path, context_length_raw)
         if not os.path.isdir(context_path):
             continue
+
+        # Normalize context length (0.5k -> 5k)
+        context_length = normalize_context_length(context_length_raw)
 
         for model in tqdm(os.listdir(context_path), desc=f"Processing {context_length} models", leave=False):
             model_path = os.path.join(context_path, model)
@@ -181,7 +194,7 @@ for technique in tqdm(os.listdir(base_dir), desc="Processing techniques"):
                     continue
 
                 tasks = TASKS_BY_CONTEXT.get(context_length, [])
-                is_longproc = context_length in ["2k", "5k", "8k"]  # Updated to include 8k
+                is_longproc = context_length in ["0.5k", "2k", "5k", "8k"]  # LongProc contexts
                 memory_data = longproc_memory_data if is_longproc else helmet_memory_data
                 throughput_data = longproc_throughput_data if is_longproc else helmet_throughput_data
                 performance_data = longproc_performance_data if is_longproc else helmet_performance_data
@@ -197,6 +210,38 @@ for technique in tqdm(os.listdir(base_dir), desc="Processing techniques"):
 
                     # Extract Slurm job ID from filename
                     slurm_id = extract_slurm_id(file)
+
+                    # For summ_multilex, skip regular .json if -gpt4eval_o.json exists (prefer the GPT-4 evaluated version)
+                    if file.endswith(".json") and not file.endswith("-gpt4eval_o.json") and not file.endswith(".json.score"):
+                        gpt4eval_path = filepath.replace(".json", "-gpt4eval_o.json")
+                        if task == "summ_multilex" and os.path.exists(gpt4eval_path):
+                            continue  # Skip this file, we'll process the -gpt4eval_o.json version instead
+
+                    # Handle -gpt4eval_o.json files for summ_multilex
+                    if file.endswith("-gpt4eval_o.json"):
+                        with open(filepath) as f:
+                            data = json.load(f)
+                            # Extract GPT-4 F1 score from averaged_metrics
+                            if "averaged_metrics" in data and "gpt-4-f1" in data["averaged_metrics"]:
+                                gpt4_f1 = float(data["averaged_metrics"]["gpt-4-f1"])
+                                current_value, current_slurm_id = performance_data[row_key]["summ_multilex"]
+                                # Only update if this job ID is newer (higher)
+                                if slurm_id >= current_slurm_id:
+                                    performance_data[row_key]["summ_multilex"] = (gpt4_f1, slurm_id)
+                            # Also extract memory and throughput if available
+                            if "memory_usage" in data:
+                                memory_value = float(data["memory_usage"]) / 1e9
+                                current_value, current_slurm_id = memory_data[row_key][task]
+                                if slurm_id >= current_slurm_id:
+                                    memory_data[row_key][task] = (memory_value, slurm_id)
+                            if "throughput" in data and "averaged_metrics" in data and "output_len" in data["averaged_metrics"]:
+                                samples_per_second = float(data["throughput"])
+                                avg_tokens_per_sample = float(data["averaged_metrics"]["output_len"])
+                                throughput_value = samples_per_second * avg_tokens_per_sample
+                                current_value, current_slurm_id = throughput_data[row_key][task]
+                                if slurm_id >= current_slurm_id:
+                                    throughput_data[row_key][task] = (throughput_value, slurm_id)
+                        continue  # Skip to next file since we've handled this -gpt4eval_o.json file
 
                     if file.endswith(".json") and not file.endswith(".json.score"):
                         with open(filepath) as f:
@@ -216,6 +261,21 @@ for technique in tqdm(os.listdir(base_dir), desc="Processing techniques"):
                                 # Only update if this job ID is newer (higher)
                                 if slurm_id >= current_slurm_id:
                                     throughput_data[row_key][task] = (throughput_value, slurm_id)
+                            # Extract performance metrics from averaged_metrics in .json files
+                            if "averaged_metrics" in data:
+                                for key in SCORE_KEYS.get(task, []):
+                                    value = data["averaged_metrics"].get(key)
+                                    if value is not None:
+                                        try:
+                                            perf_key = f"{task}_{key}" if len(SCORE_KEYS[task]) > 1 else task
+                                            perf_value = float(value)
+                                            current_value, current_slurm_id = performance_data[row_key][perf_key]
+                                            # Only update if this job ID is newer (higher)
+                                            if slurm_id >= current_slurm_id:
+                                                performance_data[row_key][perf_key] = (perf_value, slurm_id)
+                                        except Exception as e:
+                                            print(f"Error processing value: {value} for key: {key} in averaged_metrics")
+                                            print(f"Exception: {str(e)}")
                     elif file.endswith(".json.score"):
                         with open(filepath) as f:
                             score_data = json.load(f)
