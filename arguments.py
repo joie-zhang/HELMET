@@ -52,7 +52,7 @@ def parse_arguments():
     parser.add_argument("--rope_theta", type=int, default=None, help="override rope theta")
     parser.add_argument("--quantize", type=int, default=16, help="4, 8, or 16 bit quantization")
     # Parameters specific to reasoning models (qwen3, R1, etc.)
-    parser.add_argument("--enable_thinking", type=bool, default=None,
+    parser.add_argument("--enable_thinking", type=ast.literal_eval, choices=[True, False], default=None,
                         help="Enable thinking mode for reasoning models")
     
     # duoattn
