@@ -860,6 +860,7 @@ class HFModel(LLM):
             
         if "enable_thinking" in kwargs and kwargs["enable_thinking"] is not None:
             self.enable_thinking = kwargs["enable_thinking"]
+            print(f"******************* ENABLE THINKING: {self.enable_thinking} *******************")
         else:
             self.enable_thinking = None
 
