@@ -112,6 +112,16 @@ else
     MODEL_NAME="/scratch/gpfs/DANQIC/models/$MNAME"
 fi
 
+# Create model directory name with thinking mode suffix if applicable
+MODEL_DIR_NAME="$MNAME"
+if [ -n "$ENABLE_THINKING" ]; then
+    if [ "$ENABLE_THINKING" = "True" ]; then
+        MODEL_DIR_NAME="${MNAME}-thinking"
+    elif [ "$ENABLE_THINKING" = "False" ]; then
+        MODEL_DIR_NAME="${MNAME}-nothinking"
+    fi
+fi
+
 # Create flattened array of all configs
 declare -a ALL_CONFIGS=()
 for context in "${CONTEXT_LENGTHS[@]}"; do
@@ -132,26 +142,26 @@ if [ "${EXP_TYPE}" = "baseline" ]; then
     QUANT_BITS="${QUANTIZE[$quant_idx]}"
     QUANTIZE_PARAM="--quantize ${QUANT_BITS}"
     TAG="${EXP_TYPE}_${CONTEXT_LEN}_${MNAME}_${QUANT_BITS}bit_${SLURM_JOB_ID}"
-    OUTPUT_DIR="/scratch/gpfs/DANQIC/jz4391/HELMET/output/$EXP_TYPE/$CONTEXT_LEN/$MNAME/${QUANT_BITS}bit"
+    OUTPUT_DIR="/scratch/gpfs/DANQIC/jz4391/HELMET/output/$EXP_TYPE/$CONTEXT_LEN/$MODEL_DIR_NAME/${QUANT_BITS}bit"
 elif [ "${EXP_TYPE}" = "snapkv" ] || [ "${EXP_TYPE}" = "pyramidkv" ]; then
     QUANT_BITS=""
     QUANTIZE_PARAM=""
     # Include cache parameters in both tag and output directory
     CACHE_SUFFIX="w${WINDOW_SIZE}_c${MAX_CAPACITY_PROMPT}_k${KERNEL_SIZE}_${POOLING}"
     TAG="${EXP_TYPE}_${CONTEXT_LEN}_${MNAME}_${CACHE_SUFFIX}_${SLURM_JOB_ID}"
-    OUTPUT_DIR="/scratch/gpfs/DANQIC/jz4391/HELMET/output/$EXP_TYPE/$CONTEXT_LEN/$MNAME/${CACHE_SUFFIX}"
+    OUTPUT_DIR="/scratch/gpfs/DANQIC/jz4391/HELMET/output/$EXP_TYPE/$CONTEXT_LEN/$MODEL_DIR_NAME/${CACHE_SUFFIX}"
 elif [ "${EXP_TYPE}" = "streamingllm" ] || [ "${EXP_TYPE}" = "streamingllm_original" ]; then
     QUANT_BITS=""
     QUANTIZE_PARAM=""
     # Include streaming parameters in both tag and output directory
     STREAM_SUFFIX="local${N_LOCAL}_init${N_INIT}"
     TAG="${EXP_TYPE}_${CONTEXT_LEN}_${MNAME}_${STREAM_SUFFIX}_${SLURM_JOB_ID}"
-    OUTPUT_DIR="/scratch/gpfs/DANQIC/jz4391/HELMET/output/$EXP_TYPE/$CONTEXT_LEN/$MNAME/${STREAM_SUFFIX}"
+    OUTPUT_DIR="/scratch/gpfs/DANQIC/jz4391/HELMET/output/$EXP_TYPE/$CONTEXT_LEN/$MODEL_DIR_NAME/${STREAM_SUFFIX}"
 else
     QUANT_BITS=""
     QUANTIZE_PARAM=""
     TAG="${EXP_TYPE}_${CONTEXT_LEN}_${MNAME}_${SLURM_JOB_ID}"
-    OUTPUT_DIR="/scratch/gpfs/DANQIC/jz4391/HELMET/output/$EXP_TYPE/$CONTEXT_LEN/$MNAME"
+    OUTPUT_DIR="/scratch/gpfs/DANQIC/jz4391/HELMET/output/$EXP_TYPE/$CONTEXT_LEN/$MODEL_DIR_NAME"
 fi
 
 if [ ! -d "$OUTPUT_DIR" ]; then
@@ -197,6 +207,12 @@ fi
 # Set experiment-specific parameter based on EXP_TYPE
 EXP_TYPE_PARAM=""
 KV_CACHE_PARAMS=""
+
+# Set enable_thinking parameter if specified
+ENABLE_THINKING_PARAM=""
+if [ -n "$ENABLE_THINKING" ]; then
+    ENABLE_THINKING_PARAM="--enable_thinking $ENABLE_THINKING"
+fi
 
 case $EXP_TYPE in
     "streamingllm")
@@ -263,7 +279,7 @@ python /scratch/gpfs/DANQIC/jz4391/HELMET/eval.py \
     --output_dir $OUTPUT_DIR \
     --tag "$TAG" \
     --model_name_or_path $MODEL_NAME \
-    --enable_thinking True \
+    $ENABLE_THINKING_PARAM \
     $QUANTIZE_PARAM \
     $EXP_TYPE_PARAM \
     $KV_CACHE_PARAMS \
