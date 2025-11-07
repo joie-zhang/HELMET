@@ -42,11 +42,11 @@ os.makedirs(plots_dir, exist_ok=True)
 # 1) Seaborn style
 sns.set(style='whitegrid')
 
-# 2) Define the 8 performance tasks (including the three cite metrics) and the two contexts
+# 2) Define the performance tasks (including the three cite metrics) and the two contexts
 perf_tasks = [
     'recall_jsonkv', 'rag_nq', 'rag_hotpotqa', 'rerank',
-    'cite_str_em', 'cite_citation_rec', 'cite_citation_prec', 'niah', 
-    'icl_clinic', 'icl_banking'
+    'cite_str_em', 'cite_citation_rec', 'cite_citation_prec', 'niah',
+    'icl_clinic', 'icl_banking', 'summ_multilex'
 ]
 contexts = ['16k', '32k']
 
@@ -58,6 +58,11 @@ model_palette = {
     'DeepSeek-R1-Distill-Qwen-7B': 'tab:green',
     'Qwen3-8B': 'tab:purple',
     'Yarn-Qwen3-8B': 'tab:brown',
+    # Thinking mode variants
+    'Qwen3-8B-thinking': '#9467bd',  # Lighter purple
+    'Qwen3-8B-nothinking': '#5b3b7a',  # Darker purple
+    'Yarn-Qwen3-8B-thinking': '#d2691e',  # Lighter brown
+    'Yarn-Qwen3-8B-nothinking': '#654321',  # Darker brown
 }
 marker_dict = {
     'baseline':     'o',
@@ -84,11 +89,11 @@ marker_size_dict = {
 #     '8': 85,  # streamingllm_original - make octagons smaller
 }
 
-# 4) Create a 9×4 grid (changed from 8×4 to add average row)
+# 4) Create a grid for all tasks + average row
 fig, axes = plt.subplots(
     nrows=len(perf_tasks) + 1,  # Add 1 for the average row
     ncols=4,
-    figsize=(20, 33),  # Increase height slightly to accommodate new row
+    figsize=(20, int(33 * (len(perf_tasks) + 1) / 9)),  # Scale height based on number of rows
 )
 
 # Add helper function to format cache size for display
