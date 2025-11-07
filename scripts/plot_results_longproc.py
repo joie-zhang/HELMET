@@ -72,7 +72,11 @@ model_palette = {
     'DeepSeek-R1-Distill-Qwen-7B': 'tab:green',
     'Qwen3-8B': 'tab:purple',
     'Yarn-Qwen3-8B': 'tab:brown',
-    
+    # Thinking mode variants
+    'Qwen3-8B-thinking': '#9467bd',  # Lighter purple
+    'Qwen3-8B-nothinking': '#5b3b7a',  # Darker purple
+    'Yarn-Qwen3-8B-thinking': '#d2691e',  # Lighter brown
+    'Yarn-Qwen3-8B-nothinking': '#654321',  # Darker brown
 }
 marker_dict = {
     'baseline':     'o',
