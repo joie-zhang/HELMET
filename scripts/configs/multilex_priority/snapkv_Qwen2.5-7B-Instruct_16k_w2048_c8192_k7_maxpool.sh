@@ -1,0 +1,36 @@
+# Inference technique evaluation config
+# Technique: snapkv, Model: Qwen2.5-7B-Instruct, Task: summ_multilex, Context: 16k
+declare -a BASE_CONFIGS=("summ_multilex")
+declare -a CONTEXT_LENGTHS=("16k")
+declare -a MODELS=("Qwen2.5-7B-Instruct")
+declare -a QUANTIZE=("16")
+EXP_TYPE="snapkv"
+BENCHMARK="helmet"
+USE_REASONING_CONFIG="false"
+SEED=42
+
+KV_TYPE="snapkv"
+WINDOW_SIZE="2048"
+MAX_CAPACITY_PROMPT="8192"
+KERNEL_SIZE="7"
+POOLING="maxpool"
+
+
+# SLURM Configuration
+JOB_TIME="01:00:00"
+JOB_NAME="snapkv_Qwen2.5_7B_Instruct_summ_multilex_16k_w2048_c8192_k7_maxpool"
+
+# Export variables
+export BASE_CONFIGS
+export CONTEXT_LENGTHS
+export MODELS
+export QUANTIZE
+export EXP_TYPE
+export BENCHMARK
+export USE_REASONING_CONFIG
+export SEED
+export KV_TYPE
+export WINDOW_SIZE
+export MAX_CAPACITY_PROMPT
+export KERNEL_SIZE
+export POOLING

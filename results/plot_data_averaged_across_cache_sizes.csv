@@ -1,0 +1,27 @@
+model,technique,num_cache_configs,cache_sizes,avg_memory_gb,avg_performance_score,min_memory_gb,max_memory_gb,min_performance,max_performance
+DeepSeek-R1-Distill-Llama-8B,INT4,1,default,10.692,39.52,10.692,10.692,39.52,39.52
+DeepSeek-R1-Distill-Llama-8B,INT8,1,default,15.315,38.296,15.315,15.315,38.296,38.296
+DeepSeek-R1-Distill-Llama-8B,duoattn,1,sp0.5_pf32768,20.652,38.847,20.652,20.652,38.847,38.847
+DeepSeek-R1-Distill-Llama-8B,baseline,1,default,21.048,38.045,21.048,21.048,38.045,38.045
+DeepSeek-R1-Distill-Llama-8B,snapkv,2,"w2048_c8192_k7_maxpool, w256_c2048_k7_maxpool",29.438,31.979,22.942,35.935,28.277,35.681
+DeepSeek-R1-Distill-Llama-8B,pyramidkv,2,"w2048_c8192_k7_avgpool, w256_c2048_k7_avgpool",29.626,30.218,23.228,36.024,24.529,35.908
+DeepSeek-R1-Distill-Llama-8B,streamingllm,1,n_local_4092_n_init_4,23.964,22.836,23.964,23.964,22.836,22.836
+DeepSeek-R1-Distill-Qwen-7B,INT4,1,default,9.867,10.841,9.867,9.867,10.841,10.841
+DeepSeek-R1-Distill-Qwen-7B,INT8,1,default,15.694,9.393,15.694,15.694,9.393,9.393
+DeepSeek-R1-Distill-Qwen-7B,baseline,1,default,19.542,10.997,19.542,19.542,10.997,10.997
+DeepSeek-R1-Distill-Qwen-7B,snapkv,2,"w2048_c8192_k7_maxpool, w256_c2048_k7_maxpool",26.486,10.812,21.004,31.968,9.987,11.638
+DeepSeek-R1-Distill-Qwen-7B,pyramidkv,2,"w2048_c8192_k7_avgpool, w256_c2048_k7_avgpool",26.519,11.732,21.011,32.027,11.063,12.402
+DeepSeek-R1-Distill-Qwen-7B,streamingllm,1,n_local_4092_n_init_4,21.804,7.666,21.804,21.804,7.666,7.666
+Llama-3.1-8B-Instruct,INT4,1,default,11.073,43.003,11.073,11.073,43.003,43.003
+Llama-3.1-8B-Instruct,INT8,1,default,15.329,48.123,15.329,15.329,48.123,48.123
+Llama-3.1-8B-Instruct,duoattn,1,sp0.5_pf32768,20.645,47.298,20.645,20.645,47.298,47.298
+Llama-3.1-8B-Instruct,baseline,1,default,21.057,49.026,21.057,21.057,49.026,49.026
+Llama-3.1-8B-Instruct,snapkv,2,"w2048_c8192_k7_maxpool, w256_c2048_k7_maxpool",29.45,39.541,22.949,35.95,33.779,45.303
+Llama-3.1-8B-Instruct,pyramidkv,2,"w2048_c8192_k7_avgpool, w256_c2048_k7_avgpool",29.49,38.11,22.969,36.01,30.975,45.245
+Llama-3.1-8B-Instruct,streamingllm,1,n_local_4092_n_init_4,23.962,30.874,23.962,23.962,30.874,30.874
+Qwen2.5-7B-Instruct,INT4,1,default,10.201,47.025,10.201,10.201,47.025,47.025
+Qwen2.5-7B-Instruct,INT8,1,default,15.638,46.777,15.638,15.638,46.777,46.777
+Qwen2.5-7B-Instruct,baseline,1,default,19.508,47.035,19.508,19.508,47.035,47.035
+Qwen2.5-7B-Instruct,snapkv,2,"w2048_c8192_k7_maxpool, w256_c2048_k7_maxpool",26.508,36.246,20.987,32.03,30.328,42.165
+Qwen2.5-7B-Instruct,pyramidkv,2,"w2048_c8192_k7_avgpool, w256_c2048_k7_avgpool",26.54,32.275,20.993,32.088,27.684,36.866
+Qwen2.5-7B-Instruct,streamingllm,1,n_local_4092_n_init_4,21.738,28.456,21.738,21.738,28.456,28.456

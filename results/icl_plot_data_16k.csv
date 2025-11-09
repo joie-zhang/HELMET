@@ -1,0 +1,15 @@
+technique,model,context_length,cache_size,cache_size_display,icl_clinic_memory_gb,icl_banking_memory_gb,avg_icl_memory_gb,icl_clinic_performance,icl_banking_performance,avg_icl_performance
+baseline,DeepSeek-R1-Distill-Llama-8B,16k,default,baseline,19.53632256,19.62815744,19.58224,89.4,84.8,87.1
+baseline,Llama-3.1-8B-Instruct,16k,default,baseline,19.536327168,19.628162048,19.582244608,89.4,81.39999999999999,85.4
+duoattn,DeepSeek-R1-Distill-Llama-8B,16k,sp0.5_pf32768,S=0.5,19.218452992,19.297800704,19.258126848,89.2,84.6,86.9
+duoattn,Llama-3.1-8B-Instruct,16k,sp0.5_pf32768,S=0.5,19.218452992,19.297800704,19.258126848,87.8,81.2,84.5
+pyramidkv,DeepSeek-R1-Distill-Llama-8B,16k,w256_c2048_k7_avgpool,"W=256,C=2048,avgpool",20.95730944,21.056299008,21.006804224,86.0,83.8,84.9
+pyramidkv,DeepSeek-R1-Distill-Llama-8B,16k,w2048_c8192_k7_avgpool,"W=2048,C=8192,avgpool",31.864580096,32.16640512,32.015492608,88.6,85.39999999999999,87.0
+pyramidkv,Llama-3.1-8B-Instruct,16k,w256_c2048_k7_avgpool,"W=256,C=2048,avgpool",20.95966976,21.056299008,21.007984384,80.4,72.39999999999999,76.4
+pyramidkv,Llama-3.1-8B-Instruct,16k,w2048_c8192_k7_avgpool,"W=2048,C=8192,avgpool",31.864580096,32.16640512,32.015492608,88.2,80.80000000000001,84.5
+snapkv,DeepSeek-R1-Distill-Llama-8B,16k,w256_c2048_k7_maxpool,"W=256,C=2048,maxpool",20.947260928,21.042451456,20.994856192,87.8,84.8,86.3
+snapkv,DeepSeek-R1-Distill-Llama-8B,16k,w2048_c8192_k7_maxpool,"W=2048,C=8192,maxpool",31.77205504,32.073339904,31.922697472000003,89.8,84.6,87.19999999999999
+snapkv,Llama-3.1-8B-Instruct,16k,w256_c2048_k7_maxpool,"W=256,C=2048,maxpool",20.947260928,21.042451456,20.994856192,83.6,75.8,79.69999999999999
+snapkv,Llama-3.1-8B-Instruct,16k,w2048_c8192_k7_maxpool,"W=2048,C=8192,maxpool",31.77205504,32.073339904,31.922697472000003,87.4,81.8,84.6
+streamingllm,DeepSeek-R1-Distill-Llama-8B,16k,n_local_4092_n_init_4,"L=4092,I=init",22.023099904,22.118499328,22.070799616,80.2,78.2,79.2
+streamingllm,Llama-3.1-8B-Instruct,16k,n_local_4092_n_init_4,"L=4092,I=init",22.021002752,22.116402176,22.068702464,82.8,75.6,79.19999999999999

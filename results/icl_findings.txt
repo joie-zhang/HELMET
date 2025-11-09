@@ -1,0 +1,22 @@
+================================================================================
+ICL MEMORY-ONLY PLOT: KEY FINDINGS
+================================================================================
+
+FINDINGS (BULLET FORM):
+--------------------------------------------------------------------------------
+1. The DeepSeek-R1-Distill-Llama-8B reasoning model achieves 87.1% average performance on ICL tasks (Banking77 and Clinc150), compared to 85.4% for Llama-3.1-8B-Instruct, showing a 1.7 percentage point advantage.
+
+2. When subjected to aggressive token eviction with SnapKV (W=256, C=2048), Llama-3.1-8B-Instruct experiences a 5.7 percentage point decrease (from 85.4% to 79.7%), while R1-Distill-Llama shows only a 0.8 percentage point decrease (from 87.1% to 86.3%).
+
+3. With PyramidKV at the same cache configuration, Llama-Instruct drops 9.0 percentage points (from 85.4% to 76.4%), while R1-Distill-Llama drops only 2.2 percentage points (from 87.1% to 84.9%).
+
+4. On average across SnapKV and PyramidKV with small cache sizes, the reasoning model exhibits 5.9 percentage points less degradation than the instruction-tuned model (1.5 pp vs 7.4 pp).
+
+5. DuoAttention, which uses attention sparsity patterns, reduces memory by 1.7% with only 0.2 percentage point drop for R1-Distill-Llama and 0.9 percentage point drop for Llama-Instruct.
+
+6. StreamingLLM causes significant degradation for both models (7.9 pp for R1-Distill-Llama, 6.2 pp for Llama-Instruct), suggesting that ICL tasks require access to earlier context that StreamingLLM's fixed attention window cannot provide.
+
+
+FINDINGS (PARAGRAPH FORM):
+--------------------------------------------------------------------------------
+The most striking finding from the ICL memory-only analysis is that the DeepSeek-R1-Distill-Llama-8B reasoning model demonstrates substantially greater resilience to token eviction techniques compared to the Llama-3.1-8B-Instruct model. Specifically, when subjected to aggressive token eviction with SnapKV at W=256 and C=2048, Llama-Instruct experiences a 5.7 percentage point decrease (from 85.4% to 79.7%), while R1-Distill-Llama shows only a 0.8 percentage point decrease (from 87.1% to 86.3%). Similarly, with PyramidKV at the same cache configuration, Llama-Instruct drops 9.0 percentage points (from 85.4% to 76.4%), while R1-Distill-Llama drops only 2.2 percentage points (from 87.1% to 84.9%). The reasoning model thus exhibits 5.9 percentage points less degradation on average than the instruct model even when subjected to the more ambitious token eviction setting. This superior resilience suggests that reasoning models may structure information more redundantly across their context, making them more robust to the loss of individual tokens during eviction.
