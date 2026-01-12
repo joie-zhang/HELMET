@@ -1,12 +1,14 @@
-# HELMET: How to Evaluate Long-context Language Models Effectively and Thoroughly <img src="assets/logo.jpeg" alt="HELMET" width="30">
+# Reasoning-Focused Evaluation of Efficient Long-Context Inference Techniques <img src="assets/logo.jpeg" alt="HELMET" width="30">
 
 ---
 
-[[Paper](https://arxiv.org/abs/2410.02694)] 
+[[Reasoning-Focused Evaluation Paper](https://openreview.net/forum?id=uCOMb0EsPq)] (NeurIPS 2025 Efficient Reasoning Workshop) | [[Original HELMET Paper](https://arxiv.org/abs/2410.02694)]
 
 HELMET <img src="assets/logo.jpeg" alt="HELMET" width="30"> (How to Evaluate Long-context Models Effectively and Thoroughly) is a comprehensive benchmark for long-context language models covering seven diverse categories of tasks.
 The datasets are application-centric and are designed to evaluate models at different lengths and levels of complexity.
 Please check out the paper for more details, and this repo will detail how to run the evaluation.
+
+**New:** HELMET has been used to evaluate efficient long-context inference techniques (quantization and KV cache compression) in reasoning-focused settings. See our [NeurIPS 2025 Efficient Reasoning Workshop paper](https://openreview.net/forum?id=uCOMb0EsPq) for details.
 
 
 ## Quick Links
@@ -225,7 +227,7 @@ ln -s default-819c8cda45921923 default-7662505cb3478cd4
 
 ## Contacts
 
-If you have any questions, please email me at `hyen@cs.princeton.edu`.
+If you have any questions, please email `joie@princeton.edu` and `hyen@cs.princeton.edu`.
 If you encounter any problems, you can also open an issue here. Please try to specify the problem with details so we can help you better and quicker!
 
 ## Citation
@@ -240,6 +242,17 @@ If you find our work useful, please cite us:
       archivePrefix={arXiv},
       primaryClass={cs.CL},
       url={https://arxiv.org/abs/2410.02694}, 
+}
+```
+
+If you use HELMET to evaluate efficient inference techniques (e.g., quantization, KV cache compression), please also cite:
+```
+@inproceedings{zhang2025reasoning,
+  title={Reasoning-Focused Evaluation of Efficient Long-Context Inference Techniques},
+  author={Joie Zhang and Qiyao Wei and Howard Yen and Xi Ye and Danqi Chen},
+  booktitle={NeurIPS 2025 Efficient Reasoning Workshop},
+  year={2025},
+  url={https://openreview.net/forum?id=uCOMb0EsPq}
 }
 ```
 
